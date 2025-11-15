@@ -131,3 +131,4 @@ C:\Users\V I S I O N\CDPA\api\obj\Debug\net9.0\refint\api.dll
 C:\Users\V I S I O N\CDPA\api\obj\Debug\net9.0\api.pdb
 C:\Users\V I S I O N\CDPA\api\obj\Debug\net9.0\api.genruntimeconfig.cache
 C:\Users\V I S I O N\CDPA\api\obj\Debug\net9.0\ref\api.dll
+C:\Users\V I S I O N\CDPA\api\obj\Debug\net9.0\api.sourcelink.json
