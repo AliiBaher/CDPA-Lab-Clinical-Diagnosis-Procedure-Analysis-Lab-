@@ -48,11 +48,25 @@ builder.Services
             ValidAudience = jwtAudience,
 
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(1)
+            ClockSkew = TimeSpan.FromMinutes(1),
+            RoleClaimType = ClaimTypes.Role
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("admin"));
+
+    options.AddPolicy("DoctorOnly", policy =>
+        policy.RequireRole("doctor"));
+
+    options.AddPolicy("PatientOnly", policy =>
+        policy.RequireRole("patient"));
+
+    options.AddPolicy("DoctorOrAdmin", policy =>
+        policy.RequireRole("doctor", "admin"));
+});
 
 var app = builder.Build();
 
@@ -86,6 +100,39 @@ app.MapGet("/auth/me", async (HttpContext http, AppDbContext db) =>
     return Results.Ok(new { user.Id, user.Email, user.FullName, user.Role, user.CreatedAt });
 })
 .RequireAuthorization();
+
+// Admin endpoints group
+var adminGroup = app.MapGroup("/admin")
+    .RequireAuthorization("AdminOnly");
+
+adminGroup.MapGet("/users", async (AppDbContext db) =>
+{
+    var users = await db.AppUsers
+        .OrderBy(u => u.CreatedAt)
+        .Select(u => new { u.Id, u.Email, u.FullName, u.Role, u.CreatedAt })
+        .ToListAsync();
+
+    return Results.Ok(users);
+});
+
+// Doctor endpoints group
+var doctorGroup = app.MapGroup("/doctor")
+    .RequireAuthorization("DoctorOnly");
+
+doctorGroup.MapGet("/hello", (ClaimsPrincipal user) =>
+{
+    var email = user.FindFirstValue(ClaimTypes.Email);
+    return Results.Ok(new { message = $"Hello Doctor {email}" });
+});
+
+// Patient endpoints group
+var patientGroup = app.MapGroup("/patient")
+    .RequireAuthorization("PatientOnly");
+
+patientGroup.MapGet("/appointments", () =>
+{
+    return Results.Ok(new { message = "Patient appointments placeholder" });
+});
 
 // Weather endpoint (optional)
 var summaries = new[]
