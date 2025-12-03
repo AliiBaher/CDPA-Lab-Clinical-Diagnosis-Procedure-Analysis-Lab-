@@ -1,85 +1,47 @@
 import { useState, useEffect } from 'react';
-import './App.css';
+import type { User } from './types'; 
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
-import { AdminDashboard } from './pages/AdminDashboard';
 import { DoctorDashboard } from './pages/DoctorDashboard';
 import { PatientDashboard } from './pages/PatientDashboard';
+import { AdminDashboard } from './pages/AdminDashboard';
 
-export type UserRole = 'admin' | 'doctor' | 'patient';
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  specialty?: string; 
-  phone?: string;
-}
-
-type View = 'login' | 'register' | 'dashboard';
-
-export default function App() {
-  const [currentView, setCurrentView] = useState<View>('login');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-      setCurrentView('dashboard');
-    }
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) setUser(JSON.parse(savedUser));
   }, []);
 
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    setCurrentView('dashboard');
+  const handleLogin = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
   };
 
-  const handleRegister = (user: User) => {
-    setCurrentUser(user);
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    setCurrentView('dashboard');
+  const handleRegister = (registeredUser: User) => {
+    setUser(registeredUser);
+    localStorage.setItem('currentUser', JSON.stringify(registeredUser));
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
+    setUser(null);
     localStorage.removeItem('currentUser');
-    setCurrentView('login');
+    setIsRegistering(false);
   };
 
-  const renderDashboard = () => {
-    if (!currentUser) return null;
+  if (!user) {
+    if (isRegistering) return <Register onRegister={handleRegister} onSwitchToLogin={() => setIsRegistering(false)} />;
+    return <Login onLogin={handleLogin} onSwitchToRegister={() => setIsRegistering(true)} />;
+  }
 
-    switch (currentUser.role) {
-      case 'admin':
-        return <AdminDashboard user={currentUser} onLogout={handleLogout} />;
-      case 'doctor':
-        return <DoctorDashboard user={currentUser} onLogout={handleLogout} />;
-      case 'patient':
-        return <PatientDashboard user={currentUser} onLogout={handleLogout} />;
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {currentView === 'login' && (
-        <Login
-          onLogin={handleLogin}
-          onSwitchToRegister={() => setCurrentView('register')}
-        />
-      )}
-      {currentView === 'register' && (
-        <Register
-          onRegister={handleRegister}
-          onSwitchToLogin={() => setCurrentView('login')}
-        />
-      )}
-      {currentView === 'dashboard' && renderDashboard()}
-    </div>
-  );
+  switch (user.role) {
+    case 'admin': return <AdminDashboard user={user} onLogout={handleLogout} />;
+    case 'doctor': return <DoctorDashboard user={user} onLogout={handleLogout} />;
+    case 'patient': return <PatientDashboard user={user} onLogout={handleLogout} />;
+    default: return <div>Unknown role</div>;
+  }
 }
+
+export default App;
