@@ -24,6 +24,15 @@ builder.Services.AddScoped<PasswordService>();
 // 2.5) JWT service
 builder.Services.AddScoped<JwtService>();
 
+// 2.6) CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
 // 3) JWT config
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"]!;
@@ -76,6 +85,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -97,7 +107,7 @@ app.MapGet("/auth/me", async (HttpContext http, AppDbContext db) =>
     if (user == null)
         return Results.Unauthorized();
 
-    return Results.Ok(new { user.Id, user.Email, user.FullName, user.Role, user.CreatedAt });
+    return Results.Ok(new { user.Id, user.Email, user.FirstName, user.LastName, user.Phone, user.Role, user.CreatedAt });
 })
 .RequireAuthorization();
 
@@ -109,7 +119,7 @@ adminGroup.MapGet("/users", async (AppDbContext db) =>
 {
     var users = await db.AppUsers
         .OrderBy(u => u.CreatedAt)
-        .Select(u => new { u.Id, u.Email, u.FullName, u.Role, u.CreatedAt })
+        .Select(u => new { u.Id, u.Email, u.FirstName, u.LastName, u.Phone, u.Role, u.CreatedAt })
         .ToListAsync();
 
     return Results.Ok(users);

@@ -9,34 +9,82 @@ interface RegisterProps {
 
 export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', confirmPassword: '', phone: '', role: 'patient' as UserRole, specialty: ''
+    firstName: '', 
+    lastName: '', 
+    email: '', 
+    password: '', 
+    confirmPassword: '', 
+    phone: '', 
+    role: 'patient' as UserRole
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    if (!formData.name || !formData.email || !formData.password) return setError('Fill required fields');
-    if (formData.password !== formData.confirmPassword) return setError('Passwords do not match');
-    if (formData.password.length < 6) return setError('Password too short (min 6)');
-    if (formData.role === 'doctor' && !formData.specialty) return setError('Specialty required');
+    // Validation
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      setError('Please fill in all required fields');
+      setLoading(false);
+      return;
+    }
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    if (users.some((u: User) => u.email === formData.email)) return setError('Email already registered');
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      email: formData.email,
-      name: formData.name,
-      role: formData.role,
-      phone: formData.phone,
-      ...(formData.role === 'doctor' && { specialty: formData.specialty }),
-    };
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
 
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    onRegister(newUser);
+    try {
+      const response = await fetch('http://localhost:5172/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone || null,
+          role: formData.role,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.message || 'Registration failed');
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      const newUser: User = {
+        id: data.id,
+        email: data.email,
+        name: `${data.firstName} ${data.lastName}`.trim(),
+        role: data.role as UserRole,
+        phone: data.phone,
+      };
+
+      // Store token
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(newUser));
+
+      onRegister(newUser);
+    } catch (err) {
+      setError('Unable to connect. Please check your connection and try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,17 +109,14 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
             </select>
           </div>
 
-          <Input label="Full Name *" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Email Address *" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-            <Input label="Phone Number" type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+            <Input label="First Name *" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} />
+            <Input label="Last Name *" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} />
           </div>
-          
-          {formData.role === 'doctor' && (
-            <Input label="Specialty *" placeholder="e.g. Cardiology" value={formData.specialty} onChange={e => setFormData({...formData, specialty: e.target.value})} />
-          )}
 
+          <Input label="Email Address *" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+          <Input label="Phone Number" type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+          
           <div className="grid grid-cols-2 gap-4">
             <Input label="Password *" type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
             <Input label="Confirm Password *" type="password" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} />
@@ -80,8 +125,8 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">{error}</div>}
 
           <div className="flex justify-center pt-2">
-            <button type="submit" className="px-12 py-2.5 bg-gradient-to-r from-medical-500 to-medical-400 text-white rounded-full hover:shadow-lg hover:from-medical-600 hover:to-medical-500 transition-all text-sm font-medium">
-              Create Account
+            <button type="submit" disabled={loading} className="px-12 py-2.5 bg-gradient-to-r from-medical-500 to-medical-400 text-white rounded-full hover:shadow-lg hover:from-medical-600 hover:to-medical-500 transition-all text-sm font-medium disabled:opacity-50">
+              {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </div>
         </form>

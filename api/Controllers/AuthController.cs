@@ -34,7 +34,9 @@ namespace Api.Controllers
             {
                 Email        = request.Email,
                 PasswordHash = _passwordService.HashPassword(request.Password),
-                FullName     = request.FullName,
+                FirstName    = request.FirstName,
+                LastName     = request.LastName,
+                Phone        = request.Phone,
                 Role         = string.IsNullOrWhiteSpace(request.Role) ? "patient" : request.Role!,
                 CreatedAt    = DateTime.UtcNow
             };
@@ -48,7 +50,9 @@ namespace Api.Controllers
             {
                 Token     = token,
                 Email     = user.Email,
-                FullName  = user.FullName ?? "",
+                FirstName = user.FirstName,
+                LastName  = user.LastName,
+                Phone     = user.Phone,
                 Role      = user.Role
             });
         }
@@ -61,10 +65,10 @@ namespace Api.Controllers
                 .SingleOrDefaultAsync(u => u.Email == request.Email);
 
             if (user == null)
-                return Unauthorized("Invalid email or password");
+                return BadRequest(new { message = "Invalid email or password" });
 
             if (!_passwordService.VerifyPassword(request.Password, user.PasswordHash))
-                return Unauthorized("Invalid email or password");
+                return BadRequest(new { message = "Invalid email or password" });
 
             var token = _jwtService.GenerateToken(user);
 
@@ -72,7 +76,9 @@ namespace Api.Controllers
             {
                 Token     = token,
                 Email     = user.Email,
-                FullName  = user.FullName ?? "",
+                FirstName = user.FirstName,
+                LastName  = user.LastName,
+                Phone     = user.Phone,
                 Role      = user.Role
             });
         }

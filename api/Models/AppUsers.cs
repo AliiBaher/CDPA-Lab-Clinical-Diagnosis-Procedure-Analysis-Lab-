@@ -1,6 +1,6 @@
 namespace Api.Models
 {
-    public class AppUsers
+    public class AppUser
     {
         public Guid Id { get; set; }  // uuid
         public string Email { get; set; } = "";  // character varying(255)
