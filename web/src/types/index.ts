@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   phone?: string;
   specialty?: string;
+  password?: string;
 }
 
 export interface Appointment {

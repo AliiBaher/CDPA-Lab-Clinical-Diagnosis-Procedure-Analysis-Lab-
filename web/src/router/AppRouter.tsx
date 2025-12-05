@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
-import type { User } from "../App";
+import type { User } from "../types";
+
 
 const AppRouter = () => {
   const handleLogin = (user: User) => {
