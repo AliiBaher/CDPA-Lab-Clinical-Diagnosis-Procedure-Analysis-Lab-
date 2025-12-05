@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab-\\api\\api.csproj": {}
+    "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab--1\\api\\api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab-\\api\\api.csproj": {
+    "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab--1\\api\\api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab-\\api\\api.csproj",
+        "projectUniqueName": "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab--1\\api\\api.csproj",
         "projectName": "api",
-        "projectPath": "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab-\\api\\api.csproj",
+        "projectPath": "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab--1\\api\\api.csproj",
         "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab-\\api\\obj\\",
+        "outputPath": "C:\\Users\\User\\CDPA\\CDPA-Lab-Clinical-Diagnosis-Procedure-Analysis-Lab--1\\api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

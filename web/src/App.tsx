@@ -1,52 +1,47 @@
-import { useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import './App.css'
+import { useState, useEffect } from 'react';
+import type { User } from './types'; 
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { DoctorDashboard } from './pages/DoctorDashboard';
+import { PatientDashboard } from './pages/PatientDashboard';
+import { AdminDashboard } from './pages/AdminDashboard';
 
 function App() {
-  const [isAuthenticated] = useState(() => {
-    return !!localStorage.getItem('token')
-  })
+  const [user, setUser] = useState<User | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
-        <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
-      </Routes>
-    </BrowserRouter>
-  )
-}
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) setUser(JSON.parse(savedUser));
+  }, []);
 
-function Dashboard() {
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-  
+  const handleLogin = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
+  };
+
+  const handleRegister = (registeredUser: User) => {
+    setUser(registeredUser);
+    localStorage.setItem('currentUser', JSON.stringify(registeredUser));
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    window.location.href = '/login'
+    setUser(null);
+    localStorage.removeItem('currentUser');
+    setIsRegistering(false);
+  };
+
+  if (!user) {
+    if (isRegistering) return <Register onRegister={handleRegister} onSwitchToLogin={() => setIsRegistering(false)} />;
+    return <Login onLogin={handleLogin} onSwitchToRegister={() => setIsRegistering(true)} />;
   }
 
-  return (
-    <div className="dashboard">
-      <nav className="navbar">
-        <h1>CDPA Dashboard</h1>
-        <div className="user-info">
-          <span>{user.fullName} ({user.role})</span>
-          <button onClick={handleLogout} className="btn-logout">Logout</button>
-        </div>
-      </nav>
-      
-      <div className="dashboard-content">
-        <h2>Welcome, {user.fullName}!</h2>
-        <p>Role: {user.role}</p>
-        <p>Email: {user.email}</p>
-      </div>
-    </div>
-  )
+  switch (user.role) {
+    case 'admin': return <AdminDashboard user={user} onLogout={handleLogout} />;
+    case 'doctor': return <DoctorDashboard user={user} onLogout={handleLogout} />;
+    case 'patient': return <PatientDashboard user={user} onLogout={handleLogout} />;
+    default: return <div>Unknown role</div>;
+  }
 }
 
-export default App
+export default App;
