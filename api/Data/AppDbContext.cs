@@ -20,7 +20,7 @@ public class AppDbContext : DbContext
 
         entity.HasKey(e => e.Id);
 
-        // 👇 add this line
+      
         entity.Property(e => e.Id).HasColumnName("id");
 
         entity.Property(e => e.Email).HasColumnName("email");
