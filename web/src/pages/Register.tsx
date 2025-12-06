@@ -1,8 +1,7 @@
-import { useState, useContext } from 'react';
-import type { User, UserRole } from '../types';
+import { useState } from 'react';
+import type { User } from '../types';
 import { Input } from '../ui/Input';
 import axiosClient from '../api/axiosClient';
-import { AuthContext } from '../context/AuthContext';
 
 interface RegisterProps {
   onRegister: (user: User) => void;
@@ -12,41 +11,82 @@ interface RegisterProps {
 interface AuthResponse {
   token: string;
   email: string;
-  fullName: string;
-  role: UserRole;
+  firstName: string;
+  lastName: string;
+  role: string;
+  phone?: string;
 }
 
 export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', confirmPassword: '', phone: '', role: 'patient' as UserRole, specialty: ''
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    role: 'patient'
   });
 
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    if (!formData.name || !formData.email || !formData.password) return setError('Fill required fields');
-    if (formData.password !== formData.confirmPassword) return setError('Passwords do not match');
-    if (formData.password.length < 6) return setError('Password too short (min 6)');
-    if (formData.role === 'doctor' && !formData.specialty) return setError('Specialty required');
+    // Validation
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      setError('All fields are required');
+      setIsLoading(false);
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setIsLoading(false);
+      return;
+    }
 
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    if (users.some((u: User) => u.email === formData.email)) return setError('Email already registered');
+    try {
+      const response = await axiosClient.post<AuthResponse>('/auth/register', {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone || null,
+        role: formData.role,
+      });
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      email: formData.email,
-      name: formData.name,
-      role: formData.role,
-      phone: formData.phone,
-      ...(formData.role === 'doctor' && { specialty: formData.specialty }),
-    };
+      const { token, firstName, lastName, email, role, phone } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', role);
 
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    onRegister(newUser);
+      const user: User = {
+        id: email,
+        name: `${firstName} ${lastName}`,
+        email,
+        role: role as any,
+        phone,
+      };
+
+      onRegister(user);
+    } catch (err: any) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 400) {
+        setError('Email already exists or invalid data');
+      } else {
+        setError('Connection failed. Please make sure the API server is running on http://localhost:5172');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -58,11 +98,21 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
 
         <form onSubmit={handleSubmit} className="space-y-3">
 
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="First Name *" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} required />
+            <Input label="Last Name *" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} required />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Email Address *" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
+            <Input label="Phone Number" type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+          </div>
+
           <div>
             <label className="block text-gray-400 mb-1 text-xs">Account Type</label>
             <select
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               className="w-full px-0 py-1.5 bg-transparent border-0 border-b-2 border-medical-500 focus:ring-0 focus:border-medical-600 text-gray-700 outline-none text-sm"
             >
               <option value="patient">Patient</option>
@@ -70,29 +120,20 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
             </select>
           </div>
 
-          <Input label="Full Name *" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Email Address *" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-            <Input label="Phone Number" type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-          </div>
-          
-          {formData.role === 'doctor' && (
-            <Input label="Specialty *" placeholder="e.g. Cardiology" value={formData.specialty} onChange={e => setFormData({...formData, specialty: e.target.value})} />
-          )}
-
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Password *"
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              required
             />
             <Input
               label="Confirm Password *"
               type="password"
               value={formData.confirmPassword}
               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              required
             />
           </div>
 
@@ -103,8 +144,8 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
           )}
 
           <div className="flex justify-center pt-2">
-            <button type="submit" className="px-12 py-2.5 bg-gradient-to-r from-medical-500 to-medical-400 text-white rounded-full hover:shadow-lg hover:from-medical-600 hover:to-medical-500 transition-all text-sm font-medium">
-              Create Account
+            <button type="submit" disabled={isLoading} className="px-12 py-2.5 bg-gradient-to-r from-medical-500 to-medical-400 text-white rounded-full hover:shadow-lg hover:from-medical-600 hover:to-medical-500 transition-all text-sm font-medium disabled:opacity-50">
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
           </div>
         </form>

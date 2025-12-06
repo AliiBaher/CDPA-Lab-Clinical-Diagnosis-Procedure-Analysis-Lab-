@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
         : base(options) { }
 
     public DbSet<AppUser> AppUsers => Set<AppUser>();
+    public DbSet<DoctorAvailability> DoctorAvailabilities => Set<DoctorAvailability>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +28,27 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Phone).HasColumnName("phone");
             entity.Property(e => e.Role).HasColumnName("role");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<DoctorAvailability>(entity =>
+        {
+            entity.ToTable("doctor_availabilities");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.DoctorId).HasColumnName("doctor_id");
+            entity.Property(e => e.Date).HasColumnName("date");
+            entity.Property(e => e.StartTime).HasColumnName("start_time");
+            entity.Property(e => e.EndTime).HasColumnName("end_time");
+            entity.Property(e => e.SlotDurationMinutes).HasColumnName("slot_duration_minutes");
+            entity.Property(e => e.IsBooked).HasColumnName("is_booked");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         base.OnModelCreating(modelBuilder);

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { User, Appointment } from '../types';
 import { Users, Calendar, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
 
 interface DoctorDashboardProps {
   user: User;
@@ -15,6 +16,7 @@ export function DoctorDashboard({ user, onLogout }: DoctorDashboardProps) {
   ]);
   
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [activeTab, setActiveTab] = useState<'appointments' | 'availability'>('appointments');
 
   const stats = useMemo(() => {
     const todayApts = appointments.filter(apt => apt.date === selectedDate);
@@ -50,37 +52,66 @@ export function DoctorDashboard({ user, onLogout }: DoctorDashboardProps) {
 
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900">Appointments</h3>
-          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
-        </div>
-        
-        <ul className="divide-y divide-gray-200">
-          {stats.today.length === 0 ? (
-            <li className="px-4 py-6 text-center text-gray-500">No appointments for {selectedDate}</li>
-          ) : (
-            stats.today.map((apt) => (
-              <li key={apt.id} className="px-4 py-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    {apt.status === 'confirmed' ? <CheckCircle className="w-4 h-4 text-green-500" /> : apt.status === 'pending' ? <Clock className="w-4 h-4 text-yellow-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{apt.patientName}</p>
-                      <p className="text-xs text-gray-500">{apt.patientEmail}</p>
-                    </div>
-                    <div className="text-sm text-gray-500">{apt.time}</div>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(apt.status)}`}>{apt.status}</span>
-                  </div>
-                  {apt.status === 'pending' && (
-                    <div className="flex space-x-3">
-                      <button onClick={() => updateStatus(apt.id, 'confirmed')} className="text-green-600 hover:text-green-900 text-sm font-medium">Confirm</button>
-                      <button onClick={() => updateStatus(apt.id, 'cancelled')} className="text-red-600 hover:text-red-900 text-sm font-medium">Cancel</button>
-                    </div>
-                  )}
-                </div>
-              </li>
-            ))
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab('appointments')}
+              className={`pb-2 px-4 font-medium border-b-2 transition-colors ${
+                activeTab === 'appointments'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Appointments
+            </button>
+            <button
+              onClick={() => setActiveTab('availability')}
+              className={`pb-2 px-4 font-medium border-b-2 transition-colors ${
+                activeTab === 'availability'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Manage Availability
+            </button>
+          </div>
+          {activeTab === 'appointments' && (
+            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="border border-gray-300 rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" />
           )}
-        </ul>
+        </div>
+
+        {activeTab === 'appointments' ? (
+          <ul className="divide-y divide-gray-200">
+            {stats.today.length === 0 ? (
+              <li className="px-4 py-6 text-center text-gray-500">No appointments for {selectedDate}</li>
+            ) : (
+              stats.today.map((apt) => (
+                <li key={apt.id} className="px-4 py-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      {apt.status === 'confirmed' ? <CheckCircle className="w-4 h-4 text-green-500" /> : apt.status === 'pending' ? <Clock className="w-4 h-4 text-yellow-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{apt.patientName}</p>
+                        <p className="text-xs text-gray-500">{apt.patientEmail}</p>
+                      </div>
+                      <div className="text-sm text-gray-500">{apt.time}</div>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(apt.status)}`}>{apt.status}</span>
+                    </div>
+                    {apt.status === 'pending' && (
+                      <div className="flex space-x-3">
+                        <button onClick={() => updateStatus(apt.id, 'confirmed')} className="text-green-600 hover:text-green-900 text-sm font-medium">Confirm</button>
+                        <button onClick={() => updateStatus(apt.id, 'cancelled')} className="text-red-600 hover:text-red-900 text-sm font-medium">Cancel</button>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))
+            )}
+          </ul>
+        ) : (
+          <div className="p-6">
+            <AvailabilityCalendar doctorId={user.id} />
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
