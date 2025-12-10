@@ -44,6 +44,19 @@ namespace Api.Controllers
             _context.AppUsers.Add(user);
             await _context.SaveChangesAsync();
 
+            // Create DoctorProfiles record if registering as doctor
+            if (user.Role.ToLower() == "doctor")
+            {
+                var doctorProfile = new DoctorProfiles
+                {
+                    UserId = user.Id,
+                    Specialty = request.Specialty ?? "",
+                    IsActive = true
+                };
+                _context.DoctorProfiles.Add(doctorProfile);
+                await _context.SaveChangesAsync();
+            }
+
             var token = _jwtService.GenerateToken(user);
 
             return Ok(new AuthResponse

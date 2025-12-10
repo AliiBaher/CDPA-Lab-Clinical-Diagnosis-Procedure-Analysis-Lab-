@@ -25,7 +25,8 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
     password: '',
     confirmPassword: '',
     phone: '',
-    role: 'patient'
+    role: 'patient',
+    specialty: ''
   });
 
   const [error, setError] = useState('');
@@ -61,6 +62,7 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
         password: formData.password,
         phone: formData.phone || null,
         role: formData.role,
+        specialty: formData.role === 'doctor' ? formData.specialty : null,
       });
 
       const { token, firstName, lastName, email, role, phone } = response.data;
@@ -98,15 +100,6 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
 
         <form onSubmit={handleSubmit} className="space-y-3">
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="First Name *" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} required />
-            <Input label="Last Name *" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} required />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Email Address *" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
-            <Input label="Phone Number" type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-          </div>
 
           <div>
             <label className="block text-gray-400 mb-1 text-xs">Account Type</label>
@@ -119,6 +112,24 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
               <option value="doctor">Doctor</option>
             </select>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="First Name *" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} required />
+            <Input label="Last Name *" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} required />
+          </div>
+
+          {formData.role === 'doctor' && (
+            <div className="w-full">
+              <Input label="Specialty *" value={formData.specialty} onChange={e => setFormData({...formData, specialty: e.target.value})} required />
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Email Address *" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
+            <Input label="Phone Number" type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+          </div>
+
+          
 
           <div className="grid grid-cols-2 gap-4">
             <Input

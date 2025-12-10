@@ -8,6 +8,7 @@ namespace Api.Models
         public string LastName { get; set; } = "";
         public string? Phone { get; set; }
         public string? Role { get; set; } // optional — default "patient" in logic
+        public string? Specialty { get; set; } // optional — for doctors only
     }
 
     public class LoginRequest

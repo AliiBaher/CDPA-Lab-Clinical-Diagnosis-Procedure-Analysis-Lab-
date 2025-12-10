@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
         : base(options) { }
 
     public DbSet<AppUser> AppUsers => Set<AppUser>();
+    public DbSet<DoctorProfiles> DoctorProfiles => Set<DoctorProfiles>();
     public DbSet<DoctorAvailability> DoctorAvailabilities => Set<DoctorAvailability>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -28,6 +29,24 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Phone).HasColumnName("phone");
             entity.Property(e => e.Role).HasColumnName("role");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<DoctorProfiles>(entity =>
+        {
+            entity.ToTable("doctor_profiles");
+            entity.HasKey(e => e.UserId);
+
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Specialty).HasColumnName("specialty");
+            entity.Property(e => e.Hospital).HasColumnName("hospital");
+            entity.Property(e => e.Bio).HasColumnName("bio");
+            entity.Property(e => e.ClinicPhone).HasColumnName("clinic_phone");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<DoctorAvailability>(entity =>
