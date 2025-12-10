@@ -3,7 +3,6 @@ using System.Security.Claims;
 using System.Text;
 using Api.Data;
 using Api.Models;
-using Api.Seeds;
 using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -164,14 +163,6 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
-
-// Seed admin user
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var passwordService = scope.ServiceProvider.GetRequiredService<PasswordService>();
-    await AdminSeeder.SeedAdminAsync(context, passwordService);
-}
 
 app.Run();
 

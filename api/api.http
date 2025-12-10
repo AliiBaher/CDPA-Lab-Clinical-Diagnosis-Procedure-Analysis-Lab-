@@ -4,3 +4,19 @@ GET {{api_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+# Create Admin Account (Run Once)
+POST {{api_HostAddress}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Admin",
+  "lastName": "User",
+  "email": "admin@example.com",
+  "password": "Admin@123456",
+  "phone": "+1234567890",
+  "role": "admin",
+  "specialty": null
+}
+
+###
