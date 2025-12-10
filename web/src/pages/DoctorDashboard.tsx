@@ -7,9 +7,10 @@ import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
 interface DoctorDashboardProps {
   user: User;
   onLogout: () => void;
+  onProfileUpdate?: (updatedUser: User) => void;
 }
 
-export function DoctorDashboard({ user, onLogout }: DoctorDashboardProps) {
+export function DoctorDashboard({ user, onLogout, onProfileUpdate }: DoctorDashboardProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([
     { id: '1', patientName: 'John Doe', patientEmail: 'john.doe@example.com', date: '2024-12-02', time: '09:00', status: 'confirmed' },
     { id: '2', patientName: 'Jane Smith', patientEmail: 'jane.smith@example.com', date: '2024-12-02', time: '10:30', status: 'pending' },
@@ -42,7 +43,7 @@ export function DoctorDashboard({ user, onLogout }: DoctorDashboardProps) {
   };
 
   return (
-    <DashboardLayout user={user} title="Doctor Dashboard" onLogout={onLogout} icon={<Users className="w-8 h-8 text-blue-600" />}>
+    <DashboardLayout user={user} title="Doctor Dashboard" onLogout={onLogout} onProfileUpdate={onProfileUpdate} icon={<Users className="w-8 h-8 text-blue-600" />}>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
         <StatCard icon={<Calendar className="text-gray-400" />} title="Today's Appointments" value={stats.today.length} />
         <StatCard icon={<CheckCircle className="text-green-400" />} title="Confirmed" value={stats.confirmed} />

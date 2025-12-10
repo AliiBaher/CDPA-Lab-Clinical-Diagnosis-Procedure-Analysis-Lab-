@@ -26,4 +26,23 @@ namespace Api.Models
         public string Role { get; set; } = "";
         public string? Phone { get; set; }
     }
+
+    public class UpdateProfileRequest
+    {
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string? Phone { get; set; }
+        public string? Specialty { get; set; } // for doctors
+    }
+
+    public class UpdateProfileResponse
+    {
+        public string Email { get; set; } = "";
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Role { get; set; } = "";
+        public string? Phone { get; set; }
+        public string? Specialty { get; set; }
+    }
 }

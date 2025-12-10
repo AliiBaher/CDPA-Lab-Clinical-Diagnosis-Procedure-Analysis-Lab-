@@ -95,5 +95,61 @@ namespace Api.Controllers
                 Role      = user.Role
             });
         }
+
+        // UPDATE PROFILE
+        [Authorize]
+        [HttpPut("profile")]
+        public async Task<ActionResult<UpdateProfileResponse>> UpdateProfile(UpdateProfileRequest request)
+        {
+            var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(userEmail))
+                return Unauthorized();
+
+            var user = await _context.AppUsers
+                .SingleOrDefaultAsync(u => u.Email == userEmail);
+
+            if (user == null)
+                return NotFound("User not found");
+
+            // Check if new email is already taken by another user
+            if (request.Email != user.Email)
+            {
+                if (await _context.AppUsers.AnyAsync(u => u.Email == request.Email && u.Id != user.Id))
+                    return BadRequest("Email already taken");
+            }
+
+            // Update user fields
+            user.FirstName = request.FirstName;
+            user.LastName = request.LastName;
+            user.Email = request.Email;
+            user.Phone = request.Phone;
+
+            await _context.SaveChangesAsync();
+
+            // If user is a doctor, update specialty in DoctorProfiles
+            string? specialty = null;
+            if (user.Role.ToLower() == "doctor")
+            {
+                var doctorProfile = await _context.DoctorProfiles
+                    .FirstOrDefaultAsync(dp => dp.UserId == user.Id);
+
+                if (doctorProfile != null && !string.IsNullOrEmpty(request.Specialty))
+                {
+                    doctorProfile.Specialty = request.Specialty;
+                    await _context.SaveChangesAsync();
+                    specialty = doctorProfile.Specialty;
+                }
+            }
+
+            return Ok(new UpdateProfileResponse
+            {
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Role = user.Role,
+                Phone = user.Phone,
+                Specialty = specialty
+            });
+        }
     }
 }

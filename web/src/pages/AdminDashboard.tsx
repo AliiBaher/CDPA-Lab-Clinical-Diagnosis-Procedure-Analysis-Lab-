@@ -5,11 +5,12 @@ import { DashboardLayout } from '../components/DashboardLayout';
 interface AdminDashboardProps {
   user: User;
   onLogout: () => void;
+  onProfileUpdate?: (updatedUser: User) => void;
 }
 
-export function AdminDashboard({ user, onLogout }: AdminDashboardProps) {
+export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboardProps) {
   return (
-    <DashboardLayout user={user} title="Admin Dashboard" onLogout={onLogout}>
+    <DashboardLayout user={user} title="Admin Dashboard" onLogout={onLogout} onProfileUpdate={onProfileUpdate}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard icon={<Users className="h-6 w-6 text-gray-400" />} title="Total Users" value="125" />
         <StatCard icon={<Activity className="h-6 w-6 text-gray-400" />} title="Active Sessions" value="42" />

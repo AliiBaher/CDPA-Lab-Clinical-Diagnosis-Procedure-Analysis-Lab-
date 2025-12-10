@@ -38,6 +38,11 @@ function App() {
     setSelectedRole(null);
   };
 
+  const handleProfileUpdate = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+  };
+
   if (!user) {
     if (isRegistering && selectedRole) {
       return (
@@ -72,11 +77,11 @@ function App() {
 
   switch (user.role) {
     case 'admin':
-      return <AdminDashboard user={user} onLogout={handleLogout} />;
+      return <AdminDashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} />;
     case 'doctor':
-      return <DoctorDashboard user={user} onLogout={handleLogout} />;
+      return <DoctorDashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} />;
     case 'patient':
-      return <PatientDashboard user={user} onLogout={handleLogout} />;
+      return <PatientDashboard user={user} onLogout={handleLogout} onProfileUpdate={handleProfileUpdate} />;
     default:
       return <div>Unknown role</div>;
   }

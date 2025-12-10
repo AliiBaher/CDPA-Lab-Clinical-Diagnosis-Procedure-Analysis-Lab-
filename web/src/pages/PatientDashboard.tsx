@@ -6,16 +6,17 @@ import { DashboardLayout } from '../components/DashboardLayout';
 interface PatientDashboardProps {
   user: User;
   onLogout: () => void;
+  onProfileUpdate?: (updatedUser: User) => void;
 }
 
-export function PatientDashboard({ user, onLogout }: PatientDashboardProps) {
+export function PatientDashboard({ user, onLogout, onProfileUpdate }: PatientDashboardProps) {
   const [appointments] = useState<Appointment[]>([
     { id: '1', doctorName: 'Dr. Smith', specialty: 'Cardiology', date: '2024-12-05', time: '10:00 AM', status: 'upcoming' },
     { id: '2', doctorName: 'Dr. Johnson', specialty: 'General Practice', date: '2024-11-28', time: '2:30 PM', status: 'completed' }
   ]);
 
   return (
-    <DashboardLayout user={user} title="Patient Dashboard" onLogout={onLogout}>
+    <DashboardLayout user={user} title="Patient Dashboard" onLogout={onLogout} onProfileUpdate={onProfileUpdate}>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6 flex items-center">
