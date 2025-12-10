@@ -9,8 +9,6 @@ export function RoleSelection({ onSelectRole, onSwitchToLogin }: RoleSelectionPr
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-medical-100 via-medical-50 to-medical-200 relative overflow-hidden">
       <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 w-full max-w-2xl relative z-10">
-        <h1 className="text-medical-500 mb-2 text-center text-4xl font-bold">Join Our Network</h1>
-        <p className="text-center text-gray-600 mb-8">Choose your role to get started</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Patient Card */}
