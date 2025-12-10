@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { User } from './types';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { RoleSelection } from './pages/RoleSelection';
 import { DoctorDashboard } from './pages/DoctorDashboard';
 import { PatientDashboard } from './pages/PatientDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -9,6 +10,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'patient' | 'doctor' | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
@@ -33,12 +35,39 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     setIsRegistering(false);
+    setSelectedRole(null);
   };
 
   if (!user) {
-    return isRegistering ?
-      <Register onRegister={handleRegister} onSwitchToLogin={() => setIsRegistering(false)} /> :
-      <Login onLogin={handleLogin} onSwitchToRegister={() => setIsRegistering(true)} />;
+    if (isRegistering && selectedRole) {
+      return (
+        <Register
+          selectedRole={selectedRole}
+          onRegister={handleRegister}
+          onSwitchToLogin={() => {
+            setIsRegistering(false);
+            setSelectedRole(null);
+          }}
+          onBackToRoleSelection={() => setSelectedRole(null)}
+        />
+      );
+    }
+
+    if (isRegistering && !selectedRole) {
+      return (
+        <RoleSelection
+          onSelectRole={(role) => setSelectedRole(role)}
+          onSwitchToLogin={() => setIsRegistering(false)}
+        />
+      );
+    }
+
+    return (
+      <Login
+        onLogin={handleLogin}
+        onSwitchToRegister={() => setIsRegistering(true)}
+      />
+    );
   }
 
   switch (user.role) {

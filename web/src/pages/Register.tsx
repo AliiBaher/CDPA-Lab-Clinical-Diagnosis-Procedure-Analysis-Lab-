@@ -6,6 +6,8 @@ import axiosClient from '../api/axiosClient';
 interface RegisterProps {
   onRegister: (user: User) => void;
   onSwitchToLogin: () => void;
+  selectedRole: 'patient' | 'doctor';
+  onBackToRoleSelection: () => void;
 }
 
 interface AuthResponse {
@@ -17,7 +19,7 @@ interface AuthResponse {
   phone?: string;
 }
 
-export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
+export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRoleSelection }: RegisterProps) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -25,7 +27,7 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
     password: '',
     confirmPassword: '',
     phone: '',
-    role: 'patient',
+    role: selectedRole,
     specialty: ''
   });
 
@@ -96,29 +98,27 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
 
       <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-6 w-full max-w-2xl relative z-10">
         
-        <h1 className="text-medical-500 mb-4 text-center text-2xl font-bold">Create Account</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-medical-500 text-center flex-1 text-2xl font-bold">
+            Create {selectedRole === 'doctor' ? 'Doctor' : 'Patient'} Account
+          </h1>
+          <button
+            type="button"
+            onClick={onBackToRoleSelection}
+            className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+          >
+            ✕
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-
-
-          <div>
-            <label className="block text-gray-400 mb-1 text-xs">Account Type</label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-0 py-1.5 bg-transparent border-0 border-b-2 border-medical-500 focus:ring-0 focus:border-medical-600 text-gray-700 outline-none text-sm"
-            >
-              <option value="patient">Patient</option>
-              <option value="doctor">Doctor</option>
-            </select>
-          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Input label="First Name *" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} required />
             <Input label="Last Name *" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} required />
           </div>
 
-          {formData.role === 'doctor' && (
+          {selectedRole === 'doctor' && (
             <div className="w-full">
               <Input label="Specialty *" value={formData.specialty} onChange={e => setFormData({...formData, specialty: e.target.value})} required />
             </div>
