@@ -19,6 +19,185 @@ interface AuthResponse {
   phone?: string;
 }
 
+const COUNTRY_CODES = [
+  { code: '+93', country: 'Afghanistan' },
+  { code: '+213', country: 'Algeria' },
+  { code: '+376', country: 'Andorra' },
+  { code: '+54', country: 'Argentina' },
+  { code: '+374', country: 'Armenia' },
+  { code: '+61', country: 'Australia' },
+  { code: '+43', country: 'Austria' },
+  { code: '+994', country: 'Azerbaijan' },
+  { code: '+973', country: 'Bahrain' },
+  { code: '+880', country: 'Bangladesh' },
+  { code: '+375', country: 'Belarus' },
+  { code: '+32', country: 'Belgium' },
+  { code: '+501', country: 'Belize' },
+  { code: '+229', country: 'Benin' },
+  { code: '+975', country: 'Bhutan' },
+  { code: '+591', country: 'Bolivia' },
+  { code: '+387', country: 'Bosnia and Herzegovina' },
+  { code: '+55', country: 'Brazil' },
+  { code: '+673', country: 'Brunei' },
+  { code: '+359', country: 'Bulgaria' },
+  { code: '+226', country: 'Burkina Faso' },
+  { code: '+257', country: 'Burundi' },
+  { code: '+855', country: 'Cambodia' },
+  { code: '+237', country: 'Cameroon' },
+  { code: '+1', country: 'Canada' },
+  { code: '+56', country: 'Chile' },
+  { code: '+86', country: 'China' },
+  { code: '+57', country: 'Colombia' },
+  { code: '+269', country: 'Comoros' },
+  { code: '+682', country: 'Cook Islands' },
+  { code: '+506', country: 'Costa Rica' },
+  { code: '+385', country: 'Croatia' },
+  { code: '+53', country: 'Cuba' },
+  { code: '+357', country: 'Cyprus' },
+  { code: '+420', country: 'Czech Republic' },
+  { code: '+45', country: 'Denmark' },
+  { code: '+253', country: 'Djibouti' },
+  { code: '+503', country: 'El Salvador' },
+  { code: '+20', country: 'Egypt' },
+  { code: '+372', country: 'Estonia' },
+  { code: '+251', country: 'Ethiopia' },
+  { code: '+358', country: 'Finland' },
+  { code: '+33', country: 'France' },
+  { code: '+594', country: 'French Guiana' },
+  { code: '+689', country: 'French Polynesia' },
+  { code: '+500', country: 'Falkland Islands' },
+  { code: '+679', country: 'Fiji' },
+  { code: '+995', country: 'Georgia' },
+  { code: '+49', country: 'Germany' },
+  { code: '+233', country: 'Ghana' },
+  { code: '+30', country: 'Greece' },
+  { code: '+590', country: 'Guadeloupe' },
+  { code: '+502', country: 'Guatemala' },
+  { code: '+224', country: 'Guinea' },
+  { code: '+245', country: 'Guinea-Bissau' },
+  { code: '+592', country: 'Guyana' },
+  { code: '+509', country: 'Haiti' },
+  { code: '+504', country: 'Honduras' },
+  { code: '+852', country: 'Hong Kong' },
+  { code: '+36', country: 'Hungary' },
+  { code: '+354', country: 'Iceland' },
+  { code: '+91', country: 'India' },
+  { code: '+62', country: 'Indonesia' },
+  { code: '+98', country: 'Iran' },
+  { code: '+964', country: 'Iraq' },
+  { code: '+353', country: 'Ireland' },
+  { code: '+972', country: 'Israel' },
+  { code: '+39', country: 'Italy' },
+  { code: '+81', country: 'Japan' },
+  { code: '+962', country: 'Jordan' },
+  { code: '+996', country: 'Kyrgyzstan' },
+  { code: '+686', country: 'Kiribati' },
+  { code: '+82', country: 'South Korea' },
+  { code: '+850', country: 'North Korea' },
+  { code: '+383', country: 'Kosovo' },
+  { code: '+965', country: 'Kuwait' },
+  { code: '+371', country: 'Latvia' },
+  { code: '+961', country: 'Lebanon' },
+  { code: '+266', country: 'Lesotho' },
+  { code: '+231', country: 'Liberia' },
+  { code: '+218', country: 'Libya' },
+  { code: '+423', country: 'Liechtenstein' },
+  { code: '+370', country: 'Lithuania' },
+  { code: '+352', country: 'Luxembourg' },
+  { code: '+853', country: 'Macao' },
+  { code: '+389', country: 'North Macedonia' },
+  { code: '+261', country: 'Madagascar' },
+  { code: '+265', country: 'Malawi' },
+  { code: '+60', country: 'Malaysia' },
+  { code: '+960', country: 'Maldives' },
+  { code: '+223', country: 'Mali' },
+  { code: '+356', country: 'Malta' },
+  { code: '+692', country: 'Marshall Islands' },
+  { code: '+596', country: 'Martinique' },
+  { code: '+222', country: 'Mauritania' },
+  { code: '+230', country: 'Mauritius' },
+  { code: '+52', country: 'Mexico' },
+  { code: '+691', country: 'Micronesia' },
+  { code: '+373', country: 'Moldova' },
+  { code: '+377', country: 'Monaco' },
+  { code: '+976', country: 'Mongolia' },
+  { code: '+382', country: 'Montenegro' },
+  { code: '+212', country: 'Morocco' },
+  { code: '+258', country: 'Mozambique' },
+  { code: '+95', country: 'Myanmar' },
+  { code: '+264', country: 'Namibia' },
+  { code: '+674', country: 'Nauru' },
+  { code: '+977', country: 'Nepal' },
+  { code: '+31', country: 'Netherlands' },
+  { code: '+599', country: 'Netherlands Antilles' },
+  { code: '+64', country: 'New Zealand' },
+  { code: '+505', country: 'Nicaragua' },
+  { code: '+227', country: 'Niger' },
+  { code: '+234', country: 'Nigeria' },
+  { code: '+47', country: 'Norway' },
+  { code: '+968', country: 'Oman' },
+  { code: '+92', country: 'Pakistan' },
+  { code: '+680', country: 'Palau' },
+  { code: '+970', country: 'Palestine' },
+  { code: '+507', country: 'Panama' },
+  { code: '+675', country: 'Papua New Guinea' },
+  { code: '+595', country: 'Paraguay' },
+  { code: '+51', country: 'Peru' },
+  { code: '+63', country: 'Philippines' },
+  { code: '+48', country: 'Poland' },
+  { code: '+351', country: 'Portugal' },
+  { code: '+974', country: 'Qatar' },
+  { code: '+40', country: 'Romania' },
+  { code: '+7', country: 'Russia' },
+  { code: '+250', country: 'Rwanda' },
+  { code: '+378', country: 'San Marino' },
+  { code: '+966', country: 'Saudi Arabia' },
+  { code: '+221', country: 'Senegal' },
+  { code: '+381', country: 'Serbia' },
+  { code: '+248', country: 'Seychelles' },
+  { code: '+232', country: 'Sierra Leone' },
+  { code: '+65', country: 'Singapore' },
+  { code: '+386', country: 'Slovenia' },
+  { code: '+677', country: 'Solomon Islands' },
+  { code: '+252', country: 'Somalia' },
+  { code: '+27', country: 'South Africa' },
+  { code: '+34', country: 'Spain' },
+  { code: '+94', country: 'Sri Lanka' },
+  { code: '+508', country: 'Saint Pierre and Miquelon' },
+  { code: '+249', country: 'Sudan' },
+  { code: '+597', country: 'Suriname' },
+  { code: '+268', country: 'Eswatini' },
+  { code: '+46', country: 'Sweden' },
+  { code: '+41', country: 'Switzerland' },
+  { code: '+963', country: 'Syria' },
+  { code: '+886', country: 'Taiwan' },
+  { code: '+992', country: 'Tajikistan' },
+  { code: '+255', country: 'Tanzania' },
+  { code: '+66', country: 'Thailand' },
+  { code: '+670', country: 'East Timor' },
+  { code: '+228', country: 'Togo' },
+  { code: '+676', country: 'Tonga' },
+  { code: '+690', country: 'Tokelau' },
+  { code: '+216', country: 'Tunisia' },
+  { code: '+90', country: 'Turkey' },
+  { code: '+993', country: 'Turkmenistan' },
+  { code: '+688', country: 'Tuvalu' },
+  { code: '+256', country: 'Uganda' },
+  { code: '+380', country: 'Ukraine' },
+  { code: '+971', country: 'United Arab Emirates' },
+  { code: '+44', country: 'United Kingdom' },
+  { code: '+1', country: 'United States' },
+  { code: '+598', country: 'Uruguay' },
+  { code: '+998', country: 'Uzbekistan' },
+  { code: '+678', country: 'Vanuatu' },
+  { code: '+58', country: 'Venezuela' },
+  { code: '+84', country: 'Vietnam' },
+  { code: '+681', country: 'Wallis and Futuna' },
+  { code: '+967', country: 'Yemen' },
+  { code: '+260', country: 'Zambia' },
+  { code: '+263', country: 'Zimbabwe' },
+];
+
 export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRoleSelection }: RegisterProps) {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -26,7 +205,8 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
     email: '',
     password: '',
     confirmPassword: '',
-    phone: '',
+    countryCode: '+1',
+    phoneNumber: '',
     role: selectedRole,
     specialty: ''
   });
@@ -57,12 +237,13 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
     }
 
     try {
+      const fullPhone = formData.phoneNumber ? `${formData.countryCode}${formData.phoneNumber}` : null;
       const response = await axiosClient.post<AuthResponse>('/auth/register', {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-        phone: formData.phone || null,
+        phone: fullPhone,
         role: formData.role,
         specialty: formData.role === 'doctor' ? formData.specialty : null,
       });
@@ -111,9 +292,9 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-2">
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-10">
             <Input label="First Name *" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} required />
             <Input label="Last Name *" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} required />
           </div>
@@ -124,14 +305,49 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="w-full">
             <Input label="Email Address *" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
-            <Input label="Phone Number" type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
           </div>
+
+          {/* Phone row – same width as First Name */}
+          <div className="w-full">
+            <div>
+              <label className="block text-gray-400 mb-1 text-xs">
+                Phone Number
+              </label>
+              <div className="flex gap-10">
+                <select
+                  value={formData.countryCode}
+                  onChange={e => setFormData({ ...formData, countryCode: e.target.value })}
+                  className="w-72 px-0 py-0 border-b-2 border-medical-300 bg-transparent text-xs..."
+                >
+                  {COUNTRY_CODES.map(({ code, country }) => (
+                    <option key={code} value={code}>
+                      {code} {country}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="tel"
+                  placeholder="1234567890"
+                  value={formData.phoneNumber}
+                  onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  className="flex-1 px-2 py-2 border-b-2 border-medical-300 bg-transparent text-sm
+                            focus:outline-none focus:border-medical-500"
+                />
+              </div>
+            </div>
+
+            {/* second column left empty for now, keeps layout aligned */}
+            <div />
+          </div>
+
+
 
           
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-10">
             <Input
               label="Password *"
               type="password"
