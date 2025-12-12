@@ -54,20 +54,54 @@ namespace Api.Controllers
         {
             var doctorId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
 
-            if (request.StartTime >= request.EndTime)
+            // Parse time strings to TimeSpan
+            if (!TimeSpan.TryParse(request.StartTime, out var startTime))
+                return BadRequest(new { message = "Invalid start time format. Use HH:mm" });
+            
+            if (!TimeSpan.TryParse(request.EndTime, out var endTime))
+                return BadRequest(new { message = "Invalid end time format. Use HH:mm" });
+
+            if (startTime >= endTime)
                 return BadRequest(new { message = "Start time must be before end time" });
 
             var availability = new DoctorAvailability
             {
                 Id = Guid.NewGuid(),
                 DoctorId = doctorId,
-                Date = request.Date.Date,
-                StartTime = request.StartTime,
-                EndTime = request.EndTime,
+                Date = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc),
+                StartTime = startTime,
+                EndTime = endTime,
                 SlotDurationMinutes = request.SlotDurationMinutes,
                 CreatedAt = DateTime.UtcNow
             };
 
+            // Generate individual time slots
+            var slots = new List<DoctorAvailabilitySlot>();
+            var startTotalMinutes = (int)startTime.TotalMinutes;
+            var endTotalMinutes = (int)endTime.TotalMinutes;
+
+            for (int time = startTotalMinutes; time < endTotalMinutes; time += request.SlotDurationMinutes)
+            {
+                var slotEndTime = time + request.SlotDurationMinutes;
+                
+                if (slotEndTime <= endTotalMinutes)
+                {
+                    var slotStartTimeSpan = TimeSpan.FromMinutes(time);
+                    var slotEndTimeSpan = TimeSpan.FromMinutes(slotEndTime);
+
+                    slots.Add(new DoctorAvailabilitySlot
+                    {
+                        Id = Guid.NewGuid(),
+                        AvailabilityId = availability.Id,
+                        Date = availability.Date,
+                        StartTime = slotStartTimeSpan,
+                        EndTime = slotEndTimeSpan,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            availability.Slots = slots;
             _context.DoctorAvailabilities.Add(availability);
             await _context.SaveChangesAsync();
 
@@ -117,12 +151,19 @@ namespace Api.Controllers
             if (availability.DoctorId != doctorId)
                 return Forbid();
 
-            if (request.StartTime >= request.EndTime)
+            // Parse time strings to TimeSpan
+            if (!TimeSpan.TryParse(request.StartTime, out var startTime))
+                return BadRequest(new { message = "Invalid start time format. Use HH:mm" });
+            
+            if (!TimeSpan.TryParse(request.EndTime, out var endTime))
+                return BadRequest(new { message = "Invalid end time format. Use HH:mm" });
+
+            if (startTime >= endTime)
                 return BadRequest(new { message = "Start time must be before end time" });
 
             availability.Date = request.Date.Date;
-            availability.StartTime = request.StartTime;
-            availability.EndTime = request.EndTime;
+            availability.StartTime = startTime;
+            availability.EndTime = endTime;
             availability.SlotDurationMinutes = request.SlotDurationMinutes;
             availability.UpdatedAt = DateTime.UtcNow;
 
@@ -149,9 +190,13 @@ namespace Api.Controllers
             [FromQuery] DateTime endDate)
         {
             var doctorId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
+            
+            // Ensure dates are UTC
+            var utcStartDate = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
+            var utcEndDate = DateTime.SpecifyKind(endDate.Date.AddDays(1), DateTimeKind.Utc);
 
             var availabilities = await _context.DoctorAvailabilities
-                .Where(a => a.DoctorId == doctorId && a.Date >= startDate && a.Date <= endDate)
+                .Where(a => a.DoctorId == doctorId && a.Date >= utcStartDate && a.Date < utcEndDate)
                 .OrderBy(a => a.Date)
                 .ThenBy(a => a.StartTime)
                 .Select(a => new AvailabilityResponse

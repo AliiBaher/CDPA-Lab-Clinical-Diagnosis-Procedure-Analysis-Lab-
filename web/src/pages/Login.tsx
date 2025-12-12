@@ -34,8 +34,8 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
       });
 
       const { token, firstName, lastName, email, role, phone } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('role', role);
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('role', role);
 
       const user: User = {
         id: email,

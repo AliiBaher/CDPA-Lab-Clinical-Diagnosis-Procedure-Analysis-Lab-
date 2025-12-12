@@ -6,6 +6,7 @@ import { RoleSelection } from './pages/RoleSelection';
 import { DoctorDashboard } from './pages/DoctorDashboard';
 import { PatientDashboard } from './pages/PatientDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { storageUtils } from './utils/sessionManager';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -13,34 +14,37 @@ function App() {
   const [selectedRole, setSelectedRole] = useState<'patient' | 'doctor' | null>(null);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
+    // Load user from sessionStorage (per-tab storage)
+    const savedUser = storageUtils.session.getUser();
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      setUser(savedUser);
     }
   }, []);
 
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser);
-    localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
+    // Store in sessionStorage (per-tab, not shared across tabs)
+    storageUtils.session.setUser(loggedInUser);
   };
 
   const handleRegister = (registeredUser: User) => {
     setUser(registeredUser);
-    localStorage.setItem('currentUser', JSON.stringify(registeredUser));
+    // Store in sessionStorage (per-tab, not shared across tabs)
+    storageUtils.session.setUser(registeredUser);
   };
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
     setIsRegistering(false);
     setSelectedRole(null);
+    // Clear session storage for this tab only
+    storageUtils.session.clear();
   };
 
   const handleProfileUpdate = (updatedUser: User) => {
     setUser(updatedUser);
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    // Update sessionStorage for this tab
+    storageUtils.session.setUser(updatedUser);
   };
 
   if (!user) {

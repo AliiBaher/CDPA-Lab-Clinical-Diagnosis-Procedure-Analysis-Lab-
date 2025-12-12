@@ -11,6 +11,8 @@ public class AppDbContext : DbContext
     public DbSet<AppUser> AppUsers => Set<AppUser>();
     public DbSet<DoctorProfiles> DoctorProfiles => Set<DoctorProfiles>();
     public DbSet<DoctorAvailability> DoctorAvailabilities => Set<DoctorAvailability>();
+    public DbSet<DoctorAvailabilitySlot> DoctorAvailabilitySlots => Set<DoctorAvailabilitySlot>();
+    public DbSet<Appointments> Appointments => Set<Appointments>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,7 +53,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<DoctorAvailability>(entity =>
         {
-            entity.ToTable("doctor_availabilities");
+            entity.ToTable("doctor_availability");
             entity.HasKey(e => e.Id);
 
             entity.Property(e => e.Id).HasColumnName("id");
@@ -67,6 +69,49 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.Doctor)
                 .WithMany()
                 .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Appointments>(entity =>
+        {
+            entity.ToTable("appointments");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.DoctorId).HasColumnName("doctor_id");
+            entity.Property(e => e.PatientId).HasColumnName("patient_id");
+            entity.Property(e => e.StartTime).HasColumnName("start_time");
+            entity.Property(e => e.EndTime).HasColumnName("end_time");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DoctorAvailabilitySlot>(entity =>
+        {
+            entity.ToTable("doctor_availability_slots");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.AvailabilityId).HasColumnName("availability_id");
+            entity.Property(e => e.Date).HasColumnName("date");
+            entity.Property(e => e.StartTime).HasColumnName("start_time");
+            entity.Property(e => e.EndTime).HasColumnName("end_time");
+            entity.Property(e => e.IsBooked).HasColumnName("is_booked");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            entity.HasOne(e => e.Availability)
+                .WithMany(a => a.Slots)
+                .HasForeignKey(e => e.AvailabilityId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

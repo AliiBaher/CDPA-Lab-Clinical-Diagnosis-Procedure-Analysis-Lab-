@@ -1,7 +1,29 @@
 import { useState } from 'react';
-import type { User, Appointment } from '../types';
-import { Calendar, FileText, User as UserIcon, Phone } from 'lucide-react';
+import type { User } from '../types';
+import { Calendar, User as UserIcon, Phone, Stethoscope } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { DoctorsList } from '../components/DoctorsList';
+import { DoctorDetail } from '../components/DoctorDetail';
+import { MyAppointments } from '../components/MyAppointments';
+
+interface AvailableSlot {
+  availabilityId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  slotDurationMinutes: number;
+}
+
+interface AvailableDoctor {
+  doctorId: string;
+  name: string;
+  email: string;
+  phone?: string;
+  specialty: string;
+  hospital?: string;
+  bio?: string;
+  availableSlots: AvailableSlot[];
+}
 
 interface PatientDashboardProps {
   user: User;
@@ -10,52 +32,95 @@ interface PatientDashboardProps {
 }
 
 export function PatientDashboard({ user, onLogout, onProfileUpdate }: PatientDashboardProps) {
-  const [appointments] = useState<Appointment[]>([
-    { id: '1', doctorName: 'Dr. Smith', specialty: 'Cardiology', date: '2024-12-05', time: '10:00 AM', status: 'upcoming' },
-    { id: '2', doctorName: 'Dr. Johnson', specialty: 'General Practice', date: '2024-11-28', time: '2:30 PM', status: 'completed' }
-  ]);
+  const [activeTab, setActiveTab] = useState<'browse' | 'appointments' | 'records'>('browse');
+  const [selectedDoctor, setSelectedDoctor] = useState<AvailableDoctor | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleSelectDoctor = (doctor: AvailableDoctor) => {
+    setSelectedDoctor(doctor);
+  };
+
+  const handleBackToDoctors = () => {
+    setSelectedDoctor(null);
+  };
+
+  const handleBookingSuccess = (_bookedSlot: AvailableSlot) => {
+    setSelectedDoctor(null);
+    setActiveTab('appointments');
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <DashboardLayout user={user} title="Patient Dashboard" onLogout={onLogout} onProfileUpdate={onProfileUpdate}>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6 flex items-center">
-            <div className="flex-shrink-0">
-              <UserIcon className="h-12 w-12 text-gray-300 bg-gray-100 rounded-full p-2" />
-            </div>
-            <div className="ml-4">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">{user.name}</h3>
-              <p className="text-sm text-gray-500">{user.email}</p>
-              {user.phone && <p className="text-sm text-gray-500 flex items-center mt-1"><Phone className="w-3 h-3 mr-1" /> {user.phone}</p>}
-            </div>
-          </div>
-        </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-          <div className="space-y-3">
-            <ActionButton icon={<Calendar className="w-4 h-4 mr-2" />} text="Book Appointment" />
-            <ActionButton icon={<FileText className="w-4 h-4 mr-2" />} text="View Medical Records" />
-          </div>
-        </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg p-6 lg:col-span-1">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Appointments</h3>
-          <div className="space-y-4">
-            {appointments.slice(0, 3).map((apt) => (
-              <div key={apt.id} className="border-l-4 border-medical-400 pl-3">
-                <p className="text-sm font-medium text-gray-900">{apt.doctorName}</p>
-                <p className="text-xs text-gray-500">{apt.specialty}</p>
-                <div className="flex justify-between items-center mt-1">
-                  <p className="text-xs text-gray-400">{apt.date} at {apt.time}</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${apt.status === 'upcoming' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{apt.status}</span>
-                </div>
+      <div className="space-y-6">
+        {/* User Info Card */}
+        <div className="bg-gradient-to-r from-medical-50 to-blue-50 rounded-lg border border-medical-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <UserIcon className="h-12 w-12 text-medical-500 bg-medical-100 rounded-full p-2" />
               </div>
-            ))}
+              <div className="ml-4">
+                <h3 className="text-lg leading-6 font-semibold text-gray-900">{user.name}</h3>
+                <p className="text-sm text-gray-600">{user.email}</p>
+                {user.phone && <p className="text-sm text-gray-600 flex items-center mt-1"><Phone className="w-3 h-3 mr-1" /> {user.phone}</p>}
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 space-x-8">
+          <button
+            onClick={() => {
+              setActiveTab('browse');
+              setSelectedDoctor(null);
+            }}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'browse'
+                ? 'border-medical-500 text-medical-600'
+                : 'border-transparent text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <div className="flex items-center">
+              <Stethoscope className="w-4 h-4 mr-2" />
+              Browse Doctors
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('appointments')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'appointments'
+                ? 'border-medical-500 text-medical-600'
+                : 'border-transparent text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <div className="flex items-center">
+              <Calendar className="w-4 h-4 mr-2" />
+              My Appointments
+            </div>
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div>
+          {activeTab === 'browse' && (
+            selectedDoctor ? (
+              <DoctorDetail
+                doctor={selectedDoctor}
+                onBack={handleBackToDoctors}
+                onBookingSuccess={handleBookingSuccess}
+              />
+            ) : (
+              <DoctorsList onSelectDoctor={handleSelectDoctor} />
+            )
+          )}
+
+          {activeTab === 'appointments' && (
+            <MyAppointments key={refreshTrigger} />
+          )}
         </div>
       </div>
     </DashboardLayout>
   );
 }
-const ActionButton = ({ icon, text }: { icon: any, text: string }) => (
-  <button className="w-full flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">{icon} {text}</button>
-);

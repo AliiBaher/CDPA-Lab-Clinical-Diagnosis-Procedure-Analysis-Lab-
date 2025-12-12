@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import axiosClient from '../api/axiosClient';
 
 interface Availability {
@@ -22,6 +22,7 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     startTime: '09:00',
@@ -30,12 +31,13 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const requestInFlightRef = useRef(false);
 
   // Fetch availabilities for current month
   const fetchAvailabilities = async () => {
     try {
       const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
       
       const response = await axiosClient.get<Availability[]>('/availability/my-schedule', {
         params: {
@@ -44,30 +46,44 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
         },
       });
       
-      setAvailabilities(response.data);
+      // Deduplicate availabilities by ID to prevent duplicates
+      const uniqueAvailabilities = Array.from(
+        new Map(response.data.map(item => [item.id, item])).values()
+      );
+      setAvailabilities(uniqueAvailabilities);
     } catch (err: any) {
       console.error('Failed to fetch availabilities:', err);
     }
   };
 
+  // Load availabilities on mount and when currentDate changes
+  useEffect(() => {
+    fetchAvailabilities();
+  }, [currentDate]);
+
   // Handle adding new availability
   const handleAddAvailability = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (requestInFlightRef.current) {
+      return;
+    }
+    
     setError('');
     setIsLoading(true);
+    requestInFlightRef.current = true;
 
     try {
-      const [startHour, startMin] = formData.startTime.split(':');
-      const [endHour, endMin] = formData.endTime.split(':');
-
       await axiosClient.post('/availability', {
         date: formData.date,
-        startTime: `${startHour}:${startMin}:00`,
-        endTime: `${endHour}:${endMin}:00`,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
         slotDurationMinutes: formData.slotDurationMinutes,
       });
 
       setShowAddForm(false);
+      setSelectedDay(null);
       setFormData({
         date: new Date().toISOString().split('T')[0],
         startTime: '09:00',
@@ -81,6 +97,7 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
       setError(err.response?.data?.message || 'Failed to add availability');
     } finally {
       setIsLoading(false);
+      requestInFlightRef.current = false;
     }
   };
 
@@ -97,7 +114,41 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
     }
   };
 
-  // Generate calendar days
+  // Generate individual time slots from availability blocks
+  const generateTimeSlots = (availabilityList: Availability[]): Array<Availability & { slotStartTime: string; slotEndTime: string }> => {
+    const slots: Array<Availability & { slotStartTime: string; slotEndTime: string }> = [];
+
+    for (const availability of availabilityList) {
+      if (availability.isBooked) continue; // Skip booked availability blocks
+
+      const [startHours, startMinutes] = availability.startTime.split(':').map(Number);
+      const [endHours, endMinutes] = availability.endTime.split(':').map(Number);
+
+      const startTotalMinutes = startHours * 60 + startMinutes;
+      const endTotalMinutes = endHours * 60 + endMinutes;
+
+      for (let time = startTotalMinutes; time < endTotalMinutes; time += availability.slotDurationMinutes) {
+        const slotEndTime = time + availability.slotDurationMinutes;
+
+        if (slotEndTime <= endTotalMinutes) {
+          const slotStartHours = Math.floor(time / 60);
+          const slotStartMins = time % 60;
+          const slotEndHours = Math.floor(slotEndTime / 60);
+          const slotEndMins = slotEndTime % 60;
+
+          slots.push({
+            ...availability,
+            slotStartTime: `${String(slotStartHours).padStart(2, '0')}:${String(slotStartMins).padStart(2, '0')}`,
+            slotEndTime: `${String(slotEndHours).padStart(2, '0')}:${String(slotEndMins).padStart(2, '0')}`,
+          });
+        }
+      }
+    }
+
+    return slots;
+  };
+
+  const generatedSlots = generateTimeSlots(availabilities);
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
@@ -126,6 +177,16 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
   };
 
+  const handleDayClick = (day: number) => {
+    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setFormData({
+      ...formData,
+      date: dateStr,
+    });
+    setSelectedDay(day);
+    setShowAddForm(true);
+  };
+
   const getDateAvailabilities = (day: number) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return availabilities.filter(a => a.date === dateStr);
@@ -140,13 +201,6 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">Availability Calendar</h2>
-          <button
-            onClick={() => { setShowAddForm(!showAddForm); fetchAvailabilities(); }}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4" />
-            Add Availability
-          </button>
         </div>
 
         {error && (
@@ -156,67 +210,62 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
         )}
 
         {showAddForm && (
-          <form onSubmit={handleAddAvailability} className="mb-6 p-4 border border-gray-200 rounded-lg">
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
-                />
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <form onSubmit={handleAddAvailability} className="bg-white p-6 rounded-lg shadow-lg w-96">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Add Availability - {new Date(formData.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </h3>
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                  <input
+                    type="time"
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                  <input
+                    type="time"
+                    value={formData.endTime}
+                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Slot Duration (min)</label>
+                  <input
+                    type="number"
+                    value={formData.slotDurationMinutes}
+                    onChange={(e) => setFormData({ ...formData, slotDurationMinutes: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    min="15"
+                    step="15"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Slot Duration (min)</label>
-                <input
-                  type="number"
-                  value={formData.slotDurationMinutes}
-                  onChange={(e) => setFormData({ ...formData, slotDurationMinutes: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  min="15"
-                  step="15"
-                />
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {isLoading ? 'Adding...' : 'Add Availability'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddForm(false); setSelectedDay(null); }}
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                <input
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                <input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  required
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-              >
-                {isLoading ? 'Adding...' : 'Add Availability'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         )}
       </div>
 
@@ -248,9 +297,10 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
           {days.map((day, index) => (
             <div
               key={index}
-              className={`aspect-square p-2 border rounded-lg ${
-                day === null ? 'bg-gray-50' : 'border-gray-200 hover:border-blue-400'
-              } ${day && hasAvailability(day) ? 'bg-blue-50 border-blue-300' : ''}`}
+              onClick={() => day && handleDayClick(day)}
+              className={`aspect-square p-2 border rounded-lg cursor-pointer transition-all ${
+                day === null ? 'bg-gray-50' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
+              } ${day && hasAvailability(day) ? 'bg-blue-50 border-blue-300' : ''} ${day && selectedDay === day ? 'ring-2 ring-blue-500' : ''}`}
             >
               {day && (
                 <div className="h-full flex flex-col">
@@ -271,17 +321,17 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Available Slots</h3>
         <div className="space-y-2 max-h-96 overflow-y-auto">
-          {availabilities.length === 0 ? (
-            <p className="text-gray-500 text-sm">No availabilities set for this month</p>
+          {generatedSlots.length === 0 ? (
+            <p className="text-gray-500 text-sm">No available slots for this month</p>
           ) : (
-            availabilities.map((slot) => (
-              <div key={slot.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+            generatedSlots.map((slot) => (
+              <div key={`${slot.id}-${slot.slotStartTime}-${slot.slotEndTime}`} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">
                     {new Date(slot.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)} (slots: {slot.slotDurationMinutes} min)
+                    {slot.slotStartTime} - {slot.slotEndTime} ({slot.slotDurationMinutes} min)
                   </p>
                 </div>
                 <button

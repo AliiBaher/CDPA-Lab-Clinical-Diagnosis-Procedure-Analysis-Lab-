@@ -22,5 +22,6 @@ namespace Api.Models
         
         // Navigation properties
         public AppUser? Doctor { get; set; }
+        public ICollection<DoctorAvailabilitySlot> Slots { get; set; } = new List<DoctorAvailabilitySlot>();
     }
 }
