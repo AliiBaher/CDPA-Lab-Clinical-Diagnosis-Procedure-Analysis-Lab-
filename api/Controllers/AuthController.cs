@@ -16,14 +16,19 @@ namespace Api.Controllers
         private readonly PasswordService _passwordService;
         private readonly JwtService _jwtService;
 
-        public AuthController(AppDbContext context, PasswordService passwordService, JwtService jwtService)
+        public AuthController(
+            AppDbContext context,
+            PasswordService passwordService,
+            JwtService jwtService)
         {
             _context = context;
             _passwordService = passwordService;
             _jwtService = jwtService;
         }
 
+        // =========================
         // REGISTER
+        // =========================
         [HttpPost("register")]
         public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
         {
@@ -32,19 +37,18 @@ namespace Api.Controllers
 
             var user = new AppUser
             {
-                Email        = request.Email,
+                Email = request.Email,
                 PasswordHash = _passwordService.HashPassword(request.Password),
-                FirstName    = request.FirstName,
-                LastName     = request.LastName,
-                Phone        = request.Phone,
-                Role         = string.IsNullOrWhiteSpace(request.Role) ? "patient" : request.Role!,
-                CreatedAt    = DateTime.UtcNow
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Phone = request.Phone,
+                Role = string.IsNullOrWhiteSpace(request.Role) ? "patient" : request.Role!,
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.AppUsers.Add(user);
             await _context.SaveChangesAsync();
 
-            // Create DoctorProfiles record if registering as doctor
             if (user.Role.ToLower() == "doctor")
             {
                 var doctorProfile = new DoctorProfiles
@@ -53,6 +57,7 @@ namespace Api.Controllers
                     Specialty = request.Specialty ?? "",
                     IsActive = true
                 };
+
                 _context.DoctorProfiles.Add(doctorProfile);
                 await _context.SaveChangesAsync();
             }
@@ -61,16 +66,18 @@ namespace Api.Controllers
 
             return Ok(new AuthResponse
             {
-                Token     = token,
-                Email     = user.Email,
+                Token = token,
+                Email = user.Email,
                 FirstName = user.FirstName,
-                LastName  = user.LastName,
-                Phone     = user.Phone,
-                Role      = user.Role
+                LastName = user.LastName,
+                Phone = user.Phone,
+                Role = user.Role
             });
         }
 
+        // =========================
         // LOGIN
+        // =========================
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
         {
@@ -87,16 +94,18 @@ namespace Api.Controllers
 
             return Ok(new AuthResponse
             {
-                Token     = token,
-                Email     = user.Email,
+                Token = token,
+                Email = user.Email,
                 FirstName = user.FirstName,
-                LastName  = user.LastName,
-                Phone     = user.Phone,
-                Role      = user.Role
+                LastName = user.LastName,
+                Phone = user.Phone,
+                Role = user.Role
             });
         }
 
+        // =========================
         // UPDATE PROFILE
+        // =========================
         [Authorize]
         [HttpPut("profile")]
         public async Task<ActionResult<UpdateProfileResponse>> UpdateProfile(UpdateProfileRequest request)
@@ -111,14 +120,12 @@ namespace Api.Controllers
             if (user == null)
                 return NotFound("User not found");
 
-            // Check if new email is already taken by another user
             if (request.Email != user.Email)
             {
                 if (await _context.AppUsers.AnyAsync(u => u.Email == request.Email && u.Id != user.Id))
                     return BadRequest("Email already taken");
             }
 
-            // Update user fields
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
             user.Email = request.Email;
@@ -126,7 +133,6 @@ namespace Api.Controllers
 
             await _context.SaveChangesAsync();
 
-            // If user is a doctor, update specialty in DoctorProfiles
             string? specialty = null;
             if (user.Role.ToLower() == "doctor")
             {
