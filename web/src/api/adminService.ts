@@ -33,35 +33,35 @@ export interface AppointmentOverview {
 const adminService = {
   // Get all users
   getAllUsers: async (): Promise<AdminUser[]> => {
-    const response = await axiosClient.get('/admin/users');
+    const response = await axiosClient.get('/api/admin/users');
     return response.data;
   },
 
   // Get admin statistics
   getStatistics: async (): Promise<AdminStats> => {
-    const response = await axiosClient.get('/admin/statistics');
+    const response = await axiosClient.get('/api/admin/statistics');
     return response.data;
   },
 
   // Get all appointments overview
   getAppointmentsOverview: async (): Promise<AppointmentOverview[]> => {
-    const response = await axiosClient.get('/admin/appointments');
+    const response = await axiosClient.get('/api/admin/appointments');
     return response.data;
   },
 
   // Update user role
   updateUserRole: async (userId: string, newRole: string): Promise<void> => {
-    await axiosClient.put(`/admin/users/${userId}/role`, { role: newRole });
+    await axiosClient.put(`/api/admin/users/${userId}/role`, { role: newRole });
   },
 
   // Delete user
   deleteUser: async (userId: string): Promise<void> => {
-    await axiosClient.delete(`/admin/users/${userId}`);
+    await axiosClient.delete(`/api/admin/users/${userId}`);
   },
 
   // Toggle user active status
   toggleUserStatus: async (userId: string, isActive: boolean): Promise<void> => {
-    await axiosClient.put(`/admin/users/${userId}/status`, { isActive });
+    await axiosClient.put(`/api/admin/users/${userId}/status`, { isActive });
   }
 };
 
