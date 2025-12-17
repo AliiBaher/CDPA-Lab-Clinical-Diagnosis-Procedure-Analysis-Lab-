@@ -154,7 +154,9 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
   };
 
   const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    // Adjust to start week on Monday (0 = Monday, 6 = Sunday)
+    const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    return day === 0 ? 6 : day - 1;
   };
 
   const daysInMonth = getDaysInMonth(currentDate);
@@ -178,6 +180,9 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
   };
 
   const handleDayClick = (day: number) => {
+    // Don't allow selection of past dates
+    if (isPastDate(day)) return;
+    
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     setFormData({
       ...formData,
@@ -194,6 +199,14 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
 
   const hasAvailability = (day: number) => {
     return getDateAvailabilities(day).length > 0;
+  };
+
+  const isPastDate = (day: number) => {
+    const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    checkDate.setHours(0, 0, 0, 0);
+    return checkDate < today;
   };
 
   return (
@@ -285,7 +298,7 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
 
         {/* Days of week */}
         <div className="grid grid-cols-7 gap-2 mb-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
             <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
               {day}
             </div>
@@ -298,14 +311,14 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
             <div
               key={index}
               onClick={() => day && handleDayClick(day)}
-              className={`aspect-square p-2 border rounded-lg cursor-pointer transition-all ${
-                day === null ? 'bg-gray-50' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50'
-              } ${day && hasAvailability(day) ? 'bg-blue-50 border-blue-300' : ''} ${day && selectedDay === day ? 'ring-2 ring-blue-500' : ''}`}
+              className={`aspect-square p-2 border rounded-lg transition-all ${
+                day === null ? 'bg-gray-50' : isPastDate(day) ? 'bg-gray-200 border-gray-300 cursor-not-allowed' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer'
+              } ${day && !isPastDate(day) && hasAvailability(day) ? 'bg-blue-50 border-blue-300' : ''} ${day && selectedDay === day ? 'ring-2 ring-blue-500' : ''}`}
             >
               {day && (
                 <div className="h-full flex flex-col">
-                  <span className="text-sm font-semibold text-gray-700">{day}</span>
-                  {hasAvailability(day) && (
+                  <span className={`text-sm font-semibold ${isPastDate(day) ? 'text-gray-500' : 'text-gray-700'}`}>{day}</span>
+                  {!isPastDate(day) && hasAvailability(day) && (
                     <div className="mt-1 text-xs text-blue-600 font-medium">
                       {getDateAvailabilities(day).length} slot(s)
                     </div>

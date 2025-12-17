@@ -228,19 +228,15 @@ export function ProfileEdit({ user, isOpen, onClose, onSave }: ProfileEditProps)
             {user.role === 'doctor' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Medical Specialty *
+                  Medical Specialty
                 </label>
                 <input
                   type="text"
                   value={formData.specialty}
-                  onChange={(e) => handleChange('specialty', e.target.value)}
-                  placeholder="e.g., Cardiology, Neurology"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-medical-500 focus:border-transparent outline-none transition ${
-                    errors.specialty ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  disabled={isSaving}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                 />
-                {errors.specialty && <p className="text-red-600 text-xs mt-1">{errors.specialty}</p>}
+                <p className="text-xs text-gray-500 mt-1">Medical specialty cannot be changed</p>
               </div>
             )}
           </div>

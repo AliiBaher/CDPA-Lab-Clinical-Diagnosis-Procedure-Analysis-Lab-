@@ -248,7 +248,7 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
         specialty: formData.role === 'doctor' ? formData.specialty : null,
       });
 
-      const { token, firstName, lastName, email, role, phone } = response.data;
+      const { token, firstName, lastName, email, role, phone, specialty } = response.data;
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('role', role);
 
@@ -258,6 +258,7 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
         email,
         role: role as any,
         phone,
+        specialty,
       };
 
       onRegister(user);

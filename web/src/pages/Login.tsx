@@ -33,7 +33,7 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
         password: formData.password,
       });
 
-      const { token, firstName, lastName, email, role, phone } = response.data;
+      const { token, firstName, lastName, email, role, phone, specialty } = response.data;
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('role', role);
 
@@ -43,6 +43,7 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
         email,
         role: role as any,
         phone,
+        specialty,
       };
 
       onLogin(user);

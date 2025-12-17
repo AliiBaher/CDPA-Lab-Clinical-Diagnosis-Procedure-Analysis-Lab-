@@ -64,6 +64,15 @@ namespace Api.Controllers
 
             var token = _jwtService.GenerateToken(user);
 
+            string? specialty = null;
+            if (user.Role.ToLower() == "doctor")
+            {
+                var doctorProfile = await _context.DoctorProfiles
+                    .FirstOrDefaultAsync(dp => dp.UserId == user.Id);
+                if (doctorProfile != null)
+                    specialty = doctorProfile.Specialty;
+            }
+
             return Ok(new AuthResponse
             {
                 Token = token,
@@ -71,7 +80,8 @@ namespace Api.Controllers
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Phone = user.Phone,
-                Role = user.Role
+                Role = user.Role,
+                Specialty = specialty
             });
         }
 
@@ -92,6 +102,15 @@ namespace Api.Controllers
 
             var token = _jwtService.GenerateToken(user);
 
+            string? specialty = null;
+            if (user.Role.ToLower() == "doctor")
+            {
+                var doctorProfile = await _context.DoctorProfiles
+                    .FirstOrDefaultAsync(dp => dp.UserId == user.Id);
+                if (doctorProfile != null)
+                    specialty = doctorProfile.Specialty;
+            }
+
             return Ok(new AuthResponse
             {
                 Token = token,
@@ -99,7 +118,8 @@ namespace Api.Controllers
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Phone = user.Phone,
-                Role = user.Role
+                Role = user.Role,
+                Specialty = specialty
             });
         }
 
