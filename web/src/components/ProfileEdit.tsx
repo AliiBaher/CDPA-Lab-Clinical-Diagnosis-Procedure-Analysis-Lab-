@@ -16,6 +16,8 @@ export function ProfileEdit({ user, isOpen, onClose, onSave }: ProfileEditProps)
     lastName: '',
     email: '',
     phone: '',
+    gender: '',
+    birthdate: '',
     specialty: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -29,6 +31,8 @@ export function ProfileEdit({ user, isOpen, onClose, onSave }: ProfileEditProps)
       lastName: nameParts.slice(1).join(' ') || '',
       email: user.email,
       phone: user.phone || '',
+      gender: user.gender || '',
+      birthdate: user.birthdate ? new Date(user.birthdate).toISOString().split('T')[0] : '',
       specialty: user.specialty || ''
     });
   }, [user]);
@@ -204,6 +208,32 @@ export function ProfileEdit({ user, isOpen, onClose, onSave }: ProfileEditProps)
                   disabled={isSaving}
                 />
                 {errors.phone && <p className="text-red-600 text-xs mt-1">{errors.phone}</p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Gender
+                </label>
+                <input
+                  type="text"
+                  value={formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1) : ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date of Birth
+                </label>
+                <input
+                  type="text"
+                  value={formData.birthdate ? new Date(formData.birthdate).toLocaleDateString() : ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                />
               </div>
             </div>
           </div>

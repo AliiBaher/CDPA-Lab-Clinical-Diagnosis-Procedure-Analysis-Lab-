@@ -15,6 +15,8 @@ interface AuthResponse {
   lastName: string;
   role: string;
   phone?: string;
+  gender?: string;
+  birthdate?: string;
 }
 
 export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
@@ -33,7 +35,7 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
         password: formData.password,
       });
 
-      const { token, firstName, lastName, email, role, phone, specialty } = response.data;
+      const { token, firstName, lastName, email, role, phone, gender, birthdate, specialty } = response.data;
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('role', role);
 
@@ -43,6 +45,8 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
         email,
         role: role as any,
         phone,
+        gender,
+        birthdate,
         specialty,
       };
 

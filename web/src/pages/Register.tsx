@@ -207,6 +207,8 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
     confirmPassword: '',
     countryCode: '+1',
     phoneNumber: '',
+    gender: '',
+    birthdate: '',
     role: selectedRole,
     specialty: ''
   });
@@ -244,11 +246,13 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
         email: formData.email,
         password: formData.password,
         phone: fullPhone,
+        gender: formData.gender || null,
+        birthdate: formData.birthdate || null,
         role: formData.role,
         specialty: formData.role === 'doctor' ? formData.specialty : null,
       });
 
-      const { token, firstName, lastName, email, role, phone, specialty } = response.data;
+      const { token, firstName, lastName, email, role, phone, gender, birthdate, specialty } = response.data;
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('role', role);
 
@@ -258,6 +262,8 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
         email,
         role: role as any,
         phone,
+        gender,
+        birthdate,
         specialty,
       };
 
@@ -310,6 +316,27 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
             <Input label="Email Address *" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
           </div>
 
+          <div className="grid grid-cols-2 gap-10">
+            <div>
+              <label className="block text-gray-400 mb-1 text-xs">Gender</label>
+              <select
+                value={formData.gender}
+                onChange={e => setFormData({ ...formData, gender: e.target.value })}
+                className="w-full px-2 py-2 border-b-2 border-medical-300 bg-transparent text-sm focus:outline-none focus:border-medical-500"
+              >
+                <option value="">Select Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            <Input
+              label="Birthdate"
+              type="date"
+              value={formData.birthdate}
+              onChange={e => setFormData({ ...formData, birthdate: e.target.value })}
+            />
+          </div>
+
           {/* Phone row – same width as First Name */}
           <div className="w-full">
             <div>
@@ -322,8 +349,8 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
                   onChange={e => setFormData({ ...formData, countryCode: e.target.value })}
                   className="w-72 px-0 py-0 border-b-2 border-medical-300 bg-transparent text-xs..."
                 >
-                  {COUNTRY_CODES.map(({ code, country }) => (
-                    <option key={code} value={code}>
+                  {COUNTRY_CODES.map(({ code, country }, index) => (
+                    <option key={`${code}-${index}`} value={code}>
                       {code} {country}
                     </option>
                   ))}

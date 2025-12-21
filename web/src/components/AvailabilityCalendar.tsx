@@ -4,13 +4,12 @@ import axiosClient from '../api/axiosClient';
 
 interface Availability {
   id: string;
-  doctorId: string;
+  availabilityId: string;
   date: string;
   startTime: string;
   endTime: string;
   slotDurationMinutes: number;
   isBooked: boolean;
-  createdAt: string;
 }
 
 interface AvailabilityCalendarProps {
@@ -101,54 +100,22 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
     }
   };
 
-  // Handle deleting availability
-  const handleDeleteAvailability = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this availability?')) return;
+  // Handle deleting individual slot
+  const handleDeleteSlot = async (slotId: string) => {
+    if (!confirm('Are you sure you want to delete this time slot?')) return;
 
     try {
-      await axiosClient.delete(`/availability/${id}`);
+      await axiosClient.delete(`/availability/slot/${slotId}`);
       await fetchAvailabilities();
       onUpdate?.();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete availability');
+      setError(err.response?.data?.message || 'Failed to delete slot');
     }
   };
 
-  // Generate individual time slots from availability blocks
-  const generateTimeSlots = (availabilityList: Availability[]): Array<Availability & { slotStartTime: string; slotEndTime: string }> => {
-    const slots: Array<Availability & { slotStartTime: string; slotEndTime: string }> = [];
+  // No need to generate slots - API returns individual slots directly
+  const slots = availabilities;
 
-    for (const availability of availabilityList) {
-      if (availability.isBooked) continue; // Skip booked availability blocks
-
-      const [startHours, startMinutes] = availability.startTime.split(':').map(Number);
-      const [endHours, endMinutes] = availability.endTime.split(':').map(Number);
-
-      const startTotalMinutes = startHours * 60 + startMinutes;
-      const endTotalMinutes = endHours * 60 + endMinutes;
-
-      for (let time = startTotalMinutes; time < endTotalMinutes; time += availability.slotDurationMinutes) {
-        const slotEndTime = time + availability.slotDurationMinutes;
-
-        if (slotEndTime <= endTotalMinutes) {
-          const slotStartHours = Math.floor(time / 60);
-          const slotStartMins = time % 60;
-          const slotEndHours = Math.floor(slotEndTime / 60);
-          const slotEndMins = slotEndTime % 60;
-
-          slots.push({
-            ...availability,
-            slotStartTime: `${String(slotStartHours).padStart(2, '0')}:${String(slotStartMins).padStart(2, '0')}`,
-            slotEndTime: `${String(slotEndHours).padStart(2, '0')}:${String(slotEndMins).padStart(2, '0')}`,
-          });
-        }
-      }
-    }
-
-    return slots;
-  };
-
-  const generatedSlots = generateTimeSlots(availabilities);
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };

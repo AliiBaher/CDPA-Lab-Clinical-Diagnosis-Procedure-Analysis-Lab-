@@ -8,6 +8,8 @@ namespace Api.Models
         public string LastName { get; set; } = "";  // character varying(100)
         public string Role { get; set; } = "";  // character varying(20)
         public string? Phone { get; set; }  // character varying(20)
+        public string? Gender { get; set; }
+        public DateTime? Birthdate { get; set; }
         public string PasswordHash { get; set; } = ""; // text
         public DateTime CreatedAt { get; set; } // timestamp without time zone
     }

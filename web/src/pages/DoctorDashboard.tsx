@@ -3,6 +3,7 @@ import type { User } from '../types';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
 import { MyAppointments } from '../components/MyAppointments';
+import { DoctorCases } from '../components/DoctorCases';
 
 interface DoctorDashboardProps {
   user: User;
@@ -11,7 +12,7 @@ interface DoctorDashboardProps {
 }
 
 export function DoctorDashboard({ user, onLogout, onProfileUpdate }: DoctorDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'appointments' | 'availability'>('availability');
+  const [activeTab, setActiveTab] = useState<'cases' | 'appointments' | 'availability'>('cases');
 
   return (
     <DashboardLayout user={user} title="Doctor Dashboard" onLogout={onLogout} onProfileUpdate={onProfileUpdate}>
@@ -19,14 +20,14 @@ export function DoctorDashboard({ user, onLogout, onProfileUpdate }: DoctorDashb
         <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
           <div className="flex gap-4">
             <button
-              onClick={() => setActiveTab('availability')}
+              onClick={() => setActiveTab('cases')}
               className={`pb-2 px-4 font-medium border-b-2 transition-colors ${
-                activeTab === 'availability'
+                activeTab === 'cases'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Manage Availability
+              Cases & Clinical Data
             </button>
             <button
               onClick={() => setActiveTab('appointments')}
@@ -38,11 +39,23 @@ export function DoctorDashboard({ user, onLogout, onProfileUpdate }: DoctorDashb
             >
               Appointments
             </button>
+            <button
+              onClick={() => setActiveTab('availability')}
+              className={`pb-2 px-4 font-medium border-b-2 transition-colors ${
+                activeTab === 'availability'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Manage Availability
+            </button>
           </div>
         </div>
 
         <div className="p-6">
-          {activeTab === 'appointments' ? (
+          {activeTab === 'cases' ? (
+            <DoctorCases />
+          ) : activeTab === 'appointments' ? (
             <MyAppointments />
           ) : (
             <AvailabilityCalendar doctorId={user.id} />

@@ -101,8 +101,12 @@ namespace Api.Controllers
                 }
             }
 
-            availability.Slots = slots;
+            // Add availability and explicitly add each slot to context
             _context.DoctorAvailabilities.Add(availability);
+            foreach (var slot in slots)
+            {
+                _context.DoctorAvailabilitySlots.Add(slot);
+            }
             await _context.SaveChangesAsync();
 
             return Created($"/availability/{availability.Id}", new AvailabilityResponse
@@ -118,7 +122,7 @@ namespace Api.Controllers
             });
         }
 
-        // DELETE: /availability/{id} - Remove availability slot
+        // DELETE: /availability/{id} - Remove availability block (all slots)
         [HttpDelete("{id}")]
         [Authorize(Policy = "DoctorOnly")]
         public async Task<IActionResult> DeleteAvailability(Guid id)
@@ -133,6 +137,33 @@ namespace Api.Controllers
                 return Forbid();
 
             _context.DoctorAvailabilities.Remove(availability);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // DELETE: /availability/slot/{slotId} - Remove a single time slot
+        [HttpDelete("slot/{slotId}")]
+        [Authorize(Policy = "DoctorOnly")]
+        public async Task<IActionResult> DeleteSlot(Guid slotId)
+        {
+            var slot = await _context.DoctorAvailabilitySlots
+                .Include(s => s.Availability)
+                .FirstOrDefaultAsync(s => s.Id == slotId);
+
+            if (slot == null)
+                return NotFound(new { message = "Slot not found" });
+
+            // Verify doctor owns this slot
+            var doctorId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
+            if (slot.Availability.DoctorId != doctorId)
+                return Forbid();
+
+            // Prevent deletion of booked slots
+            if (slot.IsBooked)
+                return BadRequest(new { message = "Cannot delete a booked slot" });
+
+            _context.DoctorAvailabilitySlots.Remove(slot);
             await _context.SaveChangesAsync();
 
             return NoContent();
@@ -182,10 +213,10 @@ namespace Api.Controllers
             });
         }
 
-        // GET: /availability/my-schedule - Get current doctor's availability
+        // GET: /availability/my-schedule - Get current doctor's available slots
         [HttpGet("my-schedule")]
         [Authorize(Policy = "DoctorOnly")]
-        public async Task<ActionResult<IEnumerable<AvailabilityResponse>>> GetMySchedule(
+        public async Task<ActionResult<IEnumerable<object>>> GetMySchedule(
             [FromQuery] DateTime startDate,
             [FromQuery] DateTime endDate)
         {
@@ -195,24 +226,28 @@ namespace Api.Controllers
             var utcStartDate = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
             var utcEndDate = DateTime.SpecifyKind(endDate.Date.AddDays(1), DateTimeKind.Utc);
 
-            var availabilities = await _context.DoctorAvailabilities
-                .Where(a => a.DoctorId == doctorId && a.Date >= utcStartDate && a.Date < utcEndDate)
-                .OrderBy(a => a.Date)
-                .ThenBy(a => a.StartTime)
-                .Select(a => new AvailabilityResponse
+            // Return individual slots, not availability blocks
+            var slots = await _context.DoctorAvailabilitySlots
+                .Include(s => s.Availability)
+                .Where(s => s.Availability.DoctorId == doctorId 
+                         && s.Date >= utcStartDate 
+                         && s.Date < utcEndDate
+                         && !s.IsBooked)  // Only return unbooked slots
+                .OrderBy(s => s.Date)
+                .ThenBy(s => s.StartTime)
+                .Select(s => new
                 {
-                    Id = a.Id,
-                    DoctorId = a.DoctorId,
-                    Date = a.Date,
-                    StartTime = a.StartTime,
-                    EndTime = a.EndTime,
-                    SlotDurationMinutes = a.SlotDurationMinutes,
-                    IsBooked = a.IsBooked,
-                    CreatedAt = a.CreatedAt
+                    Id = s.Id,
+                    AvailabilityId = s.AvailabilityId,
+                    Date = s.Date,
+                    StartTime = s.StartTime.ToString(@"hh\:mm"),
+                    EndTime = s.EndTime.ToString(@"hh\:mm"),
+                    IsBooked = s.IsBooked,
+                    SlotDurationMinutes = s.Availability.SlotDurationMinutes
                 })
                 .ToListAsync();
 
-            return Ok(availabilities);
+            return Ok(slots);
         }
     }
 }

@@ -7,6 +7,8 @@ namespace Api.Models
         public string FirstName { get; set; } = "";
         public string LastName { get; set; } = "";
         public string? Phone { get; set; }
+        public string? Gender { get; set; }
+        public DateTime? Birthdate { get; set; }
         public string? Role { get; set; } // optional — default "patient" in logic
         public string? Specialty { get; set; } // optional — for doctors only
     }
@@ -25,6 +27,8 @@ namespace Api.Models
         public string LastName { get; set; } = "";
         public string Role { get; set; } = "";
         public string? Phone { get; set; }
+        public string? Gender { get; set; }
+        public DateTime? Birthdate { get; set; }
         public string? Specialty { get; set; }
     }
 

@@ -42,6 +42,10 @@ namespace Api.Controllers
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Phone = request.Phone,
+                Gender = request.Gender,
+                Birthdate = request.Birthdate.HasValue 
+                    ? DateTime.SpecifyKind(request.Birthdate.Value, DateTimeKind.Utc) 
+                    : null,
                 Role = string.IsNullOrWhiteSpace(request.Role) ? "patient" : request.Role!,
                 CreatedAt = DateTime.UtcNow
             };
@@ -80,6 +84,8 @@ namespace Api.Controllers
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Phone = user.Phone,
+                Gender = user.Gender,
+                Birthdate = user.Birthdate,
                 Role = user.Role,
                 Specialty = specialty
             });
@@ -118,6 +124,8 @@ namespace Api.Controllers
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Phone = user.Phone,
+                Gender = user.Gender,
+                Birthdate = user.Birthdate,
                 Role = user.Role,
                 Specialty = specialty
             });

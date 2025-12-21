@@ -32,7 +32,7 @@ interface PatientDashboardProps {
 }
 
 export function PatientDashboard({ user, onLogout, onProfileUpdate }: PatientDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'browse' | 'appointments' | 'records'>('browse');
+  const [activeTab, setActiveTab] = useState<'browse' | 'appointments'>('browse');
   const [selectedDoctor, setSelectedDoctor] = useState<AvailableDoctor | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
