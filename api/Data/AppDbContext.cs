@@ -136,6 +136,8 @@ public class AppDbContext : DbContext
             entity.Property(e => e.CaseId).HasColumnName("case_id");
             entity.Property(e => e.SubjectCode).HasColumnName("subject_code");
             entity.Property(e => e.DoctorId).HasColumnName("doctor_id");
+            entity.Property(e => e.Gender).HasColumnName("gender");
+            entity.Property(e => e.Dob).HasColumnName("dob");
             entity.Property(e => e.EpisodeStart).HasColumnName("episode_start");
             entity.Property(e => e.EpisodeEnd).HasColumnName("episode_end");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");

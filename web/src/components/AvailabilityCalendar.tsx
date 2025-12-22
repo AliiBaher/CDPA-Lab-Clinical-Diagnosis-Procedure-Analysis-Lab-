@@ -113,8 +113,11 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
     }
   };
 
+  // Handle deleting availability (same as handleDeleteSlot for compatibility)
+  const handleDeleteAvailability = handleDeleteSlot;
+
   // No need to generate slots - API returns individual slots directly
-  const slots = availabilities;
+  const generatedSlots = availabilities;
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();

@@ -6,10 +6,10 @@ namespace Api.Models
 
         public Guid CaseId { get; set; }  // uuid, FK to AppCase
 
-        public string DrugName { get; set; } = "";  // text
-        public string DoseValue { get; set; } = "";  // text
-        public string DoseUnit { get; set; } = "";  // text
-        public string Route { get; set; } = "";  // text
+        public string DrugName { get; set; } = "";  // drug_name column
+        public string DoseValue { get; set; } = "";  // dose_value column
+        public string DoseUnit { get; set; } = "";  // dose_unit column
+        public string Route { get; set; } = "";  // route column
 
         public DateTime CreatedAt { get; set; }  // timestamp
 
