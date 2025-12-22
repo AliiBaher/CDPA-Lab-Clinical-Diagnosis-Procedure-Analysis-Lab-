@@ -296,7 +296,17 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
                       {apt.doctorName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(apt.appointmentDate).toLocaleString()}
+                      {(() => {
+                        const date = new Date(apt.appointmentDate);
+                        const day = String(date.getUTCDate()).padStart(2, '0');
+                        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                        const year = date.getUTCFullYear();
+                        let hours = date.getUTCHours();
+                        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+                        const ampm = hours >= 12 ? 'PM' : 'AM';
+                        hours = hours % 12 || 12;
+                        return `${day}/${month}/${year}, ${hours}:${minutes} ${ampm}`;
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -308,7 +318,13 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(apt.createdAt).toLocaleDateString()}
+                      {(() => {
+                        const date = new Date(apt.createdAt);
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = date.getFullYear();
+                        return `${day}/${month}/${year}`;
+                      })()}
                     </td>
                   </tr>
                 ))}

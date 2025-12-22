@@ -3,6 +3,102 @@ import type { User } from '../types';
 import { X, Save } from 'lucide-react';
 import { userService } from '../api/userService';
 
+const COUNTRY_CODES = [
+  { code: '+93', country: 'Afghanistan' },
+  { code: '+213', country: 'Algeria' },
+  { code: '+376', country: 'Andorra' },
+  { code: '+54', country: 'Argentina' },
+  { code: '+374', country: 'Armenia' },
+  { code: '+61', country: 'Australia' },
+  { code: '+43', country: 'Austria' },
+  { code: '+994', country: 'Azerbaijan' },
+  { code: '+973', country: 'Bahrain' },
+  { code: '+880', country: 'Bangladesh' },
+  { code: '+375', country: 'Belarus' },
+  { code: '+32', country: 'Belgium' },
+  { code: '+501', country: 'Belize' },
+  { code: '+229', country: 'Benin' },
+  { code: '+975', country: 'Bhutan' },
+  { code: '+591', country: 'Bolivia' },
+  { code: '+387', country: 'Bosnia and Herzegovina' },
+  { code: '+55', country: 'Brazil' },
+  { code: '+673', country: 'Brunei' },
+  { code: '+359', country: 'Bulgaria' },
+  { code: '+226', country: 'Burkina Faso' },
+  { code: '+257', country: 'Burundi' },
+  { code: '+855', country: 'Cambodia' },
+  { code: '+237', country: 'Cameroon' },
+  { code: '+1', country: 'Canada' },
+  { code: '+56', country: 'Chile' },
+  { code: '+86', country: 'China' },
+  { code: '+57', country: 'Colombia' },
+  { code: '+269', country: 'Comoros' },
+  { code: '+682', country: 'Cook Islands' },
+  { code: '+506', country: 'Costa Rica' },
+  { code: '+385', country: 'Croatia' },
+  { code: '+53', country: 'Cuba' },
+  { code: '+357', country: 'Cyprus' },
+  { code: '+420', country: 'Czech Republic' },
+  { code: '+45', country: 'Denmark' },
+  { code: '+253', country: 'Djibouti' },
+  { code: '+503', country: 'El Salvador' },
+  { code: '+20', country: 'Egypt' },
+  { code: '+372', country: 'Estonia' },
+  { code: '+251', country: 'Ethiopia' },
+  { code: '+358', country: 'Finland' },
+  { code: '+33', country: 'France' },
+  { code: '+49', country: 'Germany' },
+  { code: '+233', country: 'Ghana' },
+  { code: '+30', country: 'Greece' },
+  { code: '+852', country: 'Hong Kong' },
+  { code: '+36', country: 'Hungary' },
+  { code: '+354', country: 'Iceland' },
+  { code: '+91', country: 'India' },
+  { code: '+62', country: 'Indonesia' },
+  { code: '+98', country: 'Iran' },
+  { code: '+964', country: 'Iraq' },
+  { code: '+353', country: 'Ireland' },
+  { code: '+972', country: 'Israel' },
+  { code: '+39', country: 'Italy' },
+  { code: '+81', country: 'Japan' },
+  { code: '+962', country: 'Jordan' },
+  { code: '+82', country: 'South Korea' },
+  { code: '+965', country: 'Kuwait' },
+  { code: '+961', country: 'Lebanon' },
+  { code: '+60', country: 'Malaysia' },
+  { code: '+52', country: 'Mexico' },
+  { code: '+212', country: 'Morocco' },
+  { code: '+31', country: 'Netherlands' },
+  { code: '+64', country: 'New Zealand' },
+  { code: '+47', country: 'Norway' },
+  { code: '+968', country: 'Oman' },
+  { code: '+92', country: 'Pakistan' },
+  { code: '+970', country: 'Palestine' },
+  { code: '+63', country: 'Philippines' },
+  { code: '+48', country: 'Poland' },
+  { code: '+351', country: 'Portugal' },
+  { code: '+974', country: 'Qatar' },
+  { code: '+40', country: 'Romania' },
+  { code: '+7', country: 'Russia' },
+  { code: '+966', country: 'Saudi Arabia' },
+  { code: '+65', country: 'Singapore' },
+  { code: '+27', country: 'South Africa' },
+  { code: '+34', country: 'Spain' },
+  { code: '+94', country: 'Sri Lanka' },
+  { code: '+46', country: 'Sweden' },
+  { code: '+41', country: 'Switzerland' },
+  { code: '+963', country: 'Syria' },
+  { code: '+886', country: 'Taiwan' },
+  { code: '+66', country: 'Thailand' },
+  { code: '+90', country: 'Turkey' },
+  { code: '+971', country: 'UAE' },
+  { code: '+44', country: 'United Kingdom' },
+  { code: '+1', country: 'United States' },
+  { code: '+58', country: 'Venezuela' },
+  { code: '+84', country: 'Vietnam' },
+  { code: '+967', country: 'Yemen' },
+];
+
 interface ProfileEditProps {
   user: User;
   isOpen: boolean;
@@ -15,6 +111,7 @@ export function ProfileEdit({ user, isOpen, onClose, onSave }: ProfileEditProps)
     firstName: '',
     lastName: '',
     email: '',
+    countryCode: '+1',
     phone: '',
     gender: '',
     birthdate: '',
@@ -22,15 +119,39 @@ export function ProfileEdit({ user, isOpen, onClose, onSave }: ProfileEditProps)
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
 
   // Parse name into first and last name when user changes
   useEffect(() => {
     const nameParts = user.name.split(' ');
+    // Extract country code and phone number
+    let countryCode = '+1';
+    let phoneOnly = '';
+    
+    if (user.phone) {
+      if (user.phone.startsWith('+')) {
+        // Find where the country code ends
+        const match = COUNTRY_CODES.find(cc => user.phone!.startsWith(cc.code));
+        if (match) {
+          countryCode = match.code;
+          phoneOnly = user.phone.substring(match.code.length);
+        } else {
+          // Fallback: extract last 10 digits
+          const allDigits = user.phone.replace(/\D/g, '');
+          phoneOnly = allDigits.slice(-10);
+        }
+      } else {
+        phoneOnly = user.phone;
+      }
+    }
+    
     setFormData({
       firstName: nameParts[0] || '',
       lastName: nameParts.slice(1).join(' ') || '',
       email: user.email,
-      phone: user.phone || '',
+      countryCode: countryCode,
+      phone: phoneOnly,
       gender: user.gender || '',
       birthdate: user.birthdate ? new Date(user.birthdate).toISOString().split('T')[0] : '',
       specialty: user.specialty || ''
@@ -52,9 +173,32 @@ export function ProfileEdit({ user, isOpen, onClose, onSave }: ProfileEditProps)
       newErrors.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
+    } else if (user.role === 'doctor' && !formData.email.endsWith('@cdpa.com')) {
+      newErrors.email = 'Doctor email must end with @cdpa.com';
     }
-    if (formData.phone && !/^\d{10,}$/.test(formData.phone.replace(/\D/g, ''))) {
-      newErrors.phone = 'Phone number must be at least 10 digits';
+    
+    if (!formData.phone) {
+      newErrors.phone = 'Phone number is required';
+    } else {
+      const phoneDigits = formData.phone.replace(/\D/g, '');
+      if (!/^\d+$/.test(phoneDigits)) {
+        newErrors.phone = 'Phone number must contain only digits';
+      } else if (phoneDigits.length !== 10) {
+        newErrors.phone = 'Phone number must be exactly 10 digits';
+      }
+    }
+    
+    if (formData.birthdate) {
+      const birthDate = new Date(formData.birthdate);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const dayDiff = today.getDate() - birthDate.getDate();
+      const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+      
+      if (actualAge < 18) {
+        newErrors.birthdate = 'You must be at least 18 years old';
+      }
     }
     if (user.role === 'doctor' && !formData.specialty.trim()) {
       newErrors.specialty = 'Specialty is required for doctors';
@@ -73,11 +217,12 @@ export function ProfileEdit({ user, isOpen, onClose, onSave }: ProfileEditProps)
 
     setIsSaving(true);
     try {
+      const fullPhone = `${formData.countryCode}${formData.phone}`;
       const response = await userService.updateProfile({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        phone: formData.phone || undefined,
+        phone: fullPhone || undefined,
         specialty: formData.specialty || undefined
       });
 
@@ -195,18 +340,78 @@ export function ProfileEdit({ user, isOpen, onClose, onSave }: ProfileEditProps)
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
+                  Phone Number *
                 </label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleChange('phone', e.target.value)}
-                  placeholder="Enter phone number"
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-medical-500 focus:border-transparent outline-none transition ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  disabled={isSaving}
-                />
+                <div className="flex gap-2">
+                  <div className="w-48 relative">
+                    <div
+                      onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer hover:border-medical-500 flex items-center justify-between"
+                    >
+                      <span className="text-sm">{COUNTRY_CODES.find(c => c.code === formData.countryCode)?.code} {COUNTRY_CODES.find(c => c.code === formData.countryCode)?.country}</span>
+                      <span className="text-gray-400">▼</span>
+                    </div>
+                    
+                    {isCountryDropdownOpen && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                        <div className="p-2 border-b border-gray-200">
+                          <input
+                            type="text"
+                            placeholder="Search country..."
+                            value={countrySearch}
+                            onChange={e => setCountrySearch(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-medical-500"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {COUNTRY_CODES
+                            .filter(({ code, country }) => 
+                              countrySearch === '' || 
+                              country.toLowerCase().includes(countrySearch.toLowerCase()) ||
+                              code.includes(countrySearch)
+                            )
+                            .map(({ code, country }, index) => (
+                              <div
+                                key={`${code}-${index}`}
+                                onClick={() => {
+                                  setFormData({ ...formData, countryCode: code });
+                                  setIsCountryDropdownOpen(false);
+                                  setCountrySearch('');
+                                }}
+                                className="px-3 py-2 hover:bg-medical-50 cursor-pointer text-sm"
+                              >
+                                {code} {country}
+                              </div>
+                            ))
+                          }
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow digits
+                      if (value === '' || /^\d+$/.test(value)) {
+                        handleChange('phone', value);
+                      }
+                    }}
+                    placeholder="1234567890"
+                    className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-medical-500 focus:border-transparent outline-none transition ${
+                      errors.phone ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    pattern="\d{10}"
+                    title="Phone number must be exactly 10 digits"
+                    maxLength={10}
+                    minLength={10}
+                    disabled={isSaving}
+                    required
+                  />
+                </div>
                 {errors.phone && <p className="text-red-600 text-xs mt-1">{errors.phone}</p>}
               </div>
             </div>
