@@ -196,7 +196,7 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
             </div>
 
             <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">MIMIC-II Data</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">MIMIC-III Data</h3>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Total Cases</span>
                 <div className="flex items-center gap-2">
