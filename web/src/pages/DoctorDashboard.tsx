@@ -3,7 +3,7 @@ import type { User } from '../types';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { AvailabilityCalendar } from '../components/AvailabilityCalendar';
 import { MyAppointments } from '../components/MyAppointments';
-import { DoctorCases } from '../components/DoctorCases';
+import { DoctorAiAssistPanel } from '../components/DoctorAiAssistPanel';
 
 interface DoctorDashboardProps {
   user: User;
@@ -12,7 +12,8 @@ interface DoctorDashboardProps {
 }
 
 export function DoctorDashboard({ user, onLogout, onProfileUpdate }: DoctorDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'cases' | 'appointments' | 'availability'>('cases');
+  const [activeTab, setActiveTab] = useState<'appointments' | 'availability' | 'ai-assist'>('availability');
+  const token = sessionStorage.getItem('token') || '';
 
   return (
     <DashboardLayout user={user} title="Doctor Dashboard" onLogout={onLogout} onProfileUpdate={onProfileUpdate}>
@@ -20,14 +21,14 @@ export function DoctorDashboard({ user, onLogout, onProfileUpdate }: DoctorDashb
         <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
           <div className="flex gap-4">
             <button
-              onClick={() => setActiveTab('cases')}
+              onClick={() => setActiveTab('availability')}
               className={`pb-2 px-4 font-medium border-b-2 transition-colors ${
-                activeTab === 'cases'
+                activeTab === 'availability'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Cases & Clinical Data
+              Manage Availability
             </button>
             <button
               onClick={() => setActiveTab('appointments')}
@@ -40,25 +41,25 @@ export function DoctorDashboard({ user, onLogout, onProfileUpdate }: DoctorDashb
               Appointments
             </button>
             <button
-              onClick={() => setActiveTab('availability')}
+              onClick={() => setActiveTab('ai-assist')}
               className={`pb-2 px-4 font-medium border-b-2 transition-colors ${
-                activeTab === 'availability'
+                activeTab === 'ai-assist'
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Manage Availability
+              🤖 AI Clinical Assist
             </button>
           </div>
         </div>
 
         <div className="p-6">
-          {activeTab === 'cases' ? (
-            <DoctorCases />
+          {activeTab === 'availability' ? (
+            <AvailabilityCalendar doctorId={user.id} />
           ) : activeTab === 'appointments' ? (
             <MyAppointments />
           ) : (
-            <AvailabilityCalendar doctorId={user.id} />
+            <DoctorAiAssistPanel token={token} />
           )}
         </div>
       </div>

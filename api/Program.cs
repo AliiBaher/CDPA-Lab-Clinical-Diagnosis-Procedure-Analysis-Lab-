@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using api.Services;
 using Api.Data;
 using Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,6 +18,8 @@ builder.Services.AddControllers();
 
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<IMimicService, MimicService>();
+builder.Services.AddScoped<IAdviceService, AdviceService>();
 
 builder.Services.AddCors(options =>
 {

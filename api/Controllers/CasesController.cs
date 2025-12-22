@@ -117,9 +117,6 @@ namespace Api.Controllers
                 if (request == null)
                     return BadRequest(new { message = "Request body is required" });
 
-                if (string.IsNullOrEmpty(request.Gender))
-                    return BadRequest(new { message = "Gender is required" });
-
                 var patientId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
 
                 var appCase = new AppCases
@@ -127,8 +124,6 @@ namespace Api.Controllers
                     CaseId = Guid.NewGuid(),
                     SubjectCode = patientId.ToString(),
                     DoctorId = null, // Will be assigned when appointment is booked
-                    Gender = request.Gender,
-                    Dob = request.Dob,
                     EpisodeStart = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -375,8 +370,6 @@ namespace Api.Controllers
                 SubjectCode = appCase.SubjectCode,
                 DoctorId = appCase.DoctorId,
                 DoctorName = appCase.Doctor != null ? $"Dr. {appCase.Doctor.FirstName} {appCase.Doctor.LastName}" : null,
-                Gender = appCase.Gender,
-                Dob = appCase.Dob,
                 EpisodeStart = appCase.EpisodeStart,
                 EpisodeEnd = appCase.EpisodeEnd,
                 CreatedAt = appCase.CreatedAt,
