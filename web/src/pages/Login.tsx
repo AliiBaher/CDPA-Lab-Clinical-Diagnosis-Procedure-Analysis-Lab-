@@ -18,6 +18,7 @@ interface AuthResponse {
   phone?: string;
   gender?: string;
   birthdate?: string;
+  specialty?: string;
 }
 
 export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
@@ -86,7 +87,7 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
               onMouseDown={() => setShowPassword(true)}
               onMouseUp={() => setShowPassword(false)}
               onMouseLeave={() => setShowPassword(false)}
-              className="absolute right-0 bottom-2 text-gray-400 hover:text-gray-600"
+              className="absolute right-1 bottom-4 text-gray-400 hover:text-gray-600"
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
