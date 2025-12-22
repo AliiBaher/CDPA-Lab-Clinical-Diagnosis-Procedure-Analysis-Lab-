@@ -124,6 +124,17 @@ namespace Api.Controllers
             if (slot == null)
                 return NotFound(new { message = "Slot not found or already booked" });
 
+            // Check if this patient already has an appointment at the same time with the same doctor
+            var existingAppointment = await _context.Appointments
+                .FirstOrDefaultAsync(a => 
+                    a.PatientId == patientId 
+                    && a.DoctorId == slot.Availability!.DoctorId
+                    && a.StartTime == DateTime.SpecifyKind(slot.Date.Date.Add(slot.StartTime), DateTimeKind.Utc)
+                    && a.Status != "cancelled");
+
+            if (existingAppointment != null)
+                return BadRequest(new { message = "You have already booked this appointment slot" });
+
             var appointment = new Appointments
             {
                 Id = Guid.NewGuid(),
@@ -139,7 +150,16 @@ namespace Api.Controllers
             slot.IsBooked = true;
 
             _context.Appointments.Add(appointment);
-            await _context.SaveChangesAsync();
+            
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Handle the case where another patient booked the same slot simultaneously
+                return Conflict(new { message = "This slot was just booked by another patient. Please select a different time." });
+            }
 
             return Created($"/appointments/{appointment.Id}", new AppointmentResponse
             {

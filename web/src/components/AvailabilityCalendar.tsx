@@ -101,7 +101,13 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
   };
 
   // Handle deleting individual slot
-  const handleDeleteSlot = async (slotId: string) => {
+  const handleDeleteSlot = async (slotId: string, isBooked: boolean) => {
+    if (isBooked) {
+      setError('Cannot delete a booked time slot. Patient has already reserved this time.');
+      setTimeout(() => setError(''), 5000);
+      return;
+    }
+    
     if (!confirm('Are you sure you want to delete this time slot?')) return;
 
     try {
@@ -114,7 +120,7 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
   };
 
   // Handle deleting availability (same as handleDeleteSlot for compatibility)
-  const handleDeleteAvailability = handleDeleteSlot;
+  const handleDeleteAvailability = (slotId: string, isBooked: boolean) => handleDeleteSlot(slotId, isBooked);
 
   // No need to generate slots - API returns individual slots directly
   const generatedSlots = availabilities;
@@ -308,22 +314,31 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
             <p className="text-gray-500 text-sm">No available slots for this month</p>
           ) : (
             generatedSlots.map((slot) => (
-              <div key={`${slot.id}-${slot.slotStartTime}-${slot.slotEndTime}`} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+              <div key={`${slot.id}-${slot.startTime}-${slot.endTime}`} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">
                     {new Date(slot.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </p>
+                  <p className="text-sm text-gray-700 font-medium mt-1">
+                    {slot.startTime} - {slot.endTime}
+                  </p>
                   <p className="text-xs text-gray-500">
-                    {slot.slotStartTime} - {slot.slotEndTime} ({slot.slotDurationMinutes} min)
+                    Duration: {slot.slotDurationMinutes} min
                   </p>
                 </div>
-                <button
-                  onClick={() => handleDeleteAvailability(slot.id)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  title="Delete availability"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {slot.isBooked ? (
+                  <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                    Booked
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => handleDeleteAvailability(slot.id, slot.isBooked)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    title="Delete availability"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))
           )}

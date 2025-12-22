@@ -64,18 +64,26 @@ namespace Api.Controllers
             if (startTime >= endTime)
                 return BadRequest(new { message = "Start time must be before end time" });
 
+            var requestDate = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc);
+
+            // Get all existing slots for this doctor on this date to avoid duplicates
+            var existingSlots = await _context.DoctorAvailabilitySlots
+                .Include(s => s.Availability)
+                .Where(s => s.Availability.DoctorId == doctorId && s.Date == requestDate)
+                .ToListAsync();
+
             var availability = new DoctorAvailability
             {
                 Id = Guid.NewGuid(),
                 DoctorId = doctorId,
-                Date = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc),
+                Date = requestDate,
                 StartTime = startTime,
                 EndTime = endTime,
                 SlotDurationMinutes = request.SlotDurationMinutes,
                 CreatedAt = DateTime.UtcNow
             };
 
-            // Generate individual time slots
+            // Generate individual time slots, skipping those that already exist
             var slots = new List<DoctorAvailabilitySlot>();
             var startTotalMinutes = (int)startTime.TotalMinutes;
             var endTotalMinutes = (int)endTime.TotalMinutes;
@@ -89,16 +97,30 @@ namespace Api.Controllers
                     var slotStartTimeSpan = TimeSpan.FromMinutes(time);
                     var slotEndTimeSpan = TimeSpan.FromMinutes(slotEndTime);
 
-                    slots.Add(new DoctorAvailabilitySlot
+                    // Check if this exact slot already exists
+                    var slotExists = existingSlots.Any(s => 
+                        s.StartTime == slotStartTimeSpan && 
+                        s.EndTime == slotEndTimeSpan);
+
+                    if (!slotExists)
                     {
-                        Id = Guid.NewGuid(),
-                        AvailabilityId = availability.Id,
-                        Date = availability.Date,
-                        StartTime = slotStartTimeSpan,
-                        EndTime = slotEndTimeSpan,
-                        CreatedAt = DateTime.UtcNow
-                    });
+                        slots.Add(new DoctorAvailabilitySlot
+                        {
+                            Id = Guid.NewGuid(),
+                            AvailabilityId = availability.Id,
+                            Date = availability.Date,
+                            StartTime = slotStartTimeSpan,
+                            EndTime = slotEndTimeSpan,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
                 }
+            }
+
+            // Only create availability if we have new slots to add
+            if (slots.Count == 0)
+            {
+                return BadRequest(new { message = "All time slots in this range already exist. Please select a different time frame." });
             }
 
             // Add availability and explicitly add each slot to context
