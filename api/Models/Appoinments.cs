@@ -15,6 +15,8 @@ namespace Api.Models
 
         public DateTime CreatedAt { get; set; }  // timestamp with time zone
 
+        public string? Notes { get; set; }  // optional notes from patient
+
         // Navigation properties
         public AppUser? Doctor { get; set; }
         public AppUser? Patient { get; set; }

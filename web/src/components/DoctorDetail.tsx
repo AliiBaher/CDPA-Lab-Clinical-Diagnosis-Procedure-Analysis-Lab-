@@ -162,7 +162,7 @@ export function DoctorDetail({ doctor, onBack, onBookingSuccess }: DoctorDetailP
       <div className="bg-gradient-to-r from-medical-50 to-blue-50 rounded-lg border border-medical-200 p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Dr. {doctor.name}</h2>
+            <h2 className="text-3xl font-bold text-gray-900">{doctor.name}</h2>
             <p className="text-lg text-gray-600 mt-1">{doctor.specialty}</p>
           </div>
         </div>
@@ -245,7 +245,7 @@ export function DoctorDetail({ doctor, onBack, onBookingSuccess }: DoctorDetailP
           <div className="space-y-3 mb-4">
             <div className="flex items-center justify-between py-2 border-b border-blue-200">
               <span className="text-gray-600">Doctor:</span>
-              <span className="font-medium">Dr. {doctor.name}</span>
+              <span className="font-medium">{doctor.name}</span>
             </div>
             <div className="flex items-center justify-between py-2 border-b border-blue-200">
               <span className="text-gray-600">Date:</span>

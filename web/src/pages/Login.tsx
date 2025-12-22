@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { User } from '../types';
 import { Input } from '../ui/Input';
 import axiosClient from '../api/axiosClient';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -23,6 +24,7 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +71,26 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Input id="email" label="Email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} required />
-          <Input id="password" label="Password" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} required />
+          
+          <div className="relative">
+            <Input 
+              id="password" 
+              label="Password" 
+              type={showPassword ? "text" : "password"} 
+              value={formData.password} 
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })} 
+              required 
+            />
+            <button
+              type="button"
+              onMouseDown={() => setShowPassword(true)}
+              onMouseUp={() => setShowPassword(false)}
+              onMouseLeave={() => setShowPassword(false)}
+              className="absolute right-0 bottom-2 text-gray-400 hover:text-gray-600"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
 

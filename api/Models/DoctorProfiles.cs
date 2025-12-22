@@ -8,7 +8,7 @@ namespace Api.Models
         public string? Hospital { get; set; }  // character varying(200)
         public string? Bio { get; set; }  // text
         public string? ClinicPhone { get; set; }  // character varying(20)
-        public bool IsActive { get; set; }  // boolean
+        public bool IsActive { get; set; }  // boolean - also used for admin approval
 
         // Navigation property
         public AppUser? User { get; set; }

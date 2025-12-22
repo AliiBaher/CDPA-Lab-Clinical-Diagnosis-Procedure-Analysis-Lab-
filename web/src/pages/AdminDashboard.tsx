@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { User } from '../types';
-import { Users, Activity, Calendar, Database, Trash2, Edit, UserCheck, UserX } from 'lucide-react';
+import { Users, Activity, Calendar, Database, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import adminService, { type AdminUser, type AdminStats, type AppointmentOverview } from '../api/adminService';
 
@@ -17,8 +17,6 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
   const [appointments, setAppointments] = useState<AppointmentOverview[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [newRole, setNewRole] = useState('');
 
   useEffect(() => {
     loadStatistics();
@@ -57,7 +55,15 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
       setLoading(false);
     }
   };
-
+  const handleApproveDoctor = async (userId: string, approve: boolean) => {
+    try {
+      await adminService.approveDoctor(userId, approve);
+      await loadUsers();
+    } catch (err: any) {
+      console.error('Failed to approve/reject doctor:', err);
+      alert(err.response?.data?.message || 'Failed to update doctor approval status');
+    }
+  };
   const loadAppointments = async () => {
     try {
       setLoading(true);
@@ -80,20 +86,6 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
       loadStatistics();
     } catch (err: any) {
       alert('Failed to delete user: ' + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const handleUpdateRole = async (userId: string) => {
-    if (!newRole) return;
-    
-    try {
-      await adminService.updateUserRole(userId, newRole);
-      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-      setEditingUserId(null);
-      setNewRole('');
-      loadStatistics();
-    } catch (err: any) {
-      alert('Failed to update role: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -161,7 +153,7 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
               bgColor="bg-blue-50"
             />
             <StatCard
-              icon={<UserCheck className="h-8 w-8 text-green-500" />}
+              icon={<Activity className="h-8 w-8 text-green-500" />}
               title="Total Doctors"
               value={stats?.totalDoctors.toString() || '0'}
               bgColor="bg-green-50"
@@ -179,41 +171,6 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
               bgColor="bg-orange-50"
             />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Appointment Status</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Pending</span>
-                  <span className="text-lg font-bold text-yellow-600">{stats?.pendingAppointments || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Approved</span>
-                  <span className="text-lg font-bold text-green-600">{stats?.approvedAppointments || 0}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">MIMIC-III Data</h3>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Total Cases</span>
-                <div className="flex items-center gap-2">
-                  <Database className="w-5 h-5 text-blue-500" />
-                  <span className="text-lg font-bold text-blue-600">{stats?.totalCases || 0}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-6 rounded-lg shadow text-white">
-              <h3 className="text-lg font-semibold mb-4">System Status</h3>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-lg font-medium">Operational</span>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -229,10 +186,10 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -241,63 +198,55 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{u.firstName} {u.lastName}</div>
                       {u.specialty && <div className="text-xs text-gray-500">{u.specialty}</div>}
+                      {u.role === 'doctor' && u.isApproved !== undefined && (
+                        <div className="mt-1">
+                          {u.isApproved ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Approved
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                              Pending Approval
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {editingUserId === u.id ? (
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={newRole}
-                            onChange={(e) => setNewRole(e.target.value)}
-                            className="text-sm border border-gray-300 rounded px-2 py-1"
-                          >
-                            <option value="">Select...</option>
-                            <option value="admin">Admin</option>
-                            <option value="doctor">Doctor</option>
-                            <option value="patient">Patient</option>
-                          </select>
-                          <button
-                            onClick={() => handleUpdateRole(u.id)}
-                            className="text-green-600 hover:text-green-800"
-                          >
-                            <UserCheck className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingUserId(null);
-                              setNewRole('');
-                            }}
-                            className="text-gray-600 hover:text-gray-800"
-                          >
-                            <UserX className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          u.role === 'admin' ? 'bg-red-100 text-red-800' :
-                          u.role === 'doctor' ? 'bg-blue-100 text-blue-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {u.role}
-                        </span>
-                      )}
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        u.role === 'admin' ? 'bg-red-100 text-red-800' :
+                        u.role === 'doctor' ? 'bg-blue-100 text-blue-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {u.role}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{u.phone}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingUserId(u.id);
-                            setNewRole(u.role);
-                          }}
-                          className="text-blue-600 hover:text-blue-800"
-                          title="Edit Role"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                      <div className="flex items-center justify-center gap-2">
+                        {u.role === 'doctor' && !u.isApproved && (
+                          <>
+                            <button
+                              onClick={() => handleApproveDoctor(u.id, true)}
+                              className="text-green-600 hover:text-green-800"
+                              title="Approve Doctor"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleApproveDoctor(u.id, false)}
+                              className="text-red-600 hover:text-red-800"
+                              title="Reject Doctor"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => handleDeleteUser(u.id)}
                           className="text-red-600 hover:text-red-800"

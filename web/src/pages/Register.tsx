@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { User } from '../types';
 import { Input } from '../ui/Input';
 import axiosClient from '../api/axiosClient';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface RegisterProps {
   onRegister: (user: User) => void;
@@ -17,6 +18,9 @@ interface AuthResponse {
   lastName: string;
   role: string;
   phone?: string;
+  gender?: string;
+  birthdate?: string;
+  specialty?: string;
 }
 
 const COUNTRY_CODES = [
@@ -198,6 +202,29 @@ const COUNTRY_CODES = [
   { code: '+263', country: 'Zimbabwe' },
 ];
 
+const SPECIALTIES = [
+  'Internal Medicine',
+  'Cardiology',
+  'Pulmonology / Respiratory Medicine',
+  'Nephrology',
+  'Endocrinology & Metabolism',
+  'Gastroenterology',
+  'Neurology',
+  'General Surgery',
+  'Orthopedics & Traumatology',
+  'Obstetrics & Gynecology',
+  'Pediatrics',
+  'Emergency Medicine',
+  'Family Medicine / General Practice',
+  'Psychiatry',
+  'Radiology',
+  'Anesthesiology & Reanimation',
+  'Oncology',
+  'Infectious Diseases',
+  'Dermatology',
+  'Rheumatology',
+];
+
 export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRoleSelection }: RegisterProps) {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -215,15 +242,82 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
 
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showDoctorApprovalMessage, setShowDoctorApprovalMessage] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
+  const [specialtySearch, setSpecialtySearch] = useState('');
+  const [isSpecialtyDropdownOpen, setIsSpecialtyDropdownOpen] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const passwordRequirements = {
+    minLength: formData.password.length >= 8,
+    hasUpperCase: /[A-Z]/.test(formData.password),
+    hasLowerCase: /[a-z]/.test(formData.password),
+    hasNumber: /[0-9]/.test(formData.password),
+    hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
+  };
+
+  const isPasswordStrong = Object.values(passwordRequirements).every(req => req);
+
+  const filteredCountries = COUNTRY_CODES.filter(
+    ({ code, country }) =>
+      country.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      code.includes(countrySearch)
+  );
+
+  const filteredSpecialties = SPECIALTIES.filter(specialty =>
+    specialty.toLowerCase().includes(specialtySearch.toLowerCase())
+  );
+
+  const selectedCountry = COUNTRY_CODES.find(c => c.code === formData.countryCode);
+
+  const handleSelectCountry = (code: string) => {
+    setFormData({ ...formData, countryCode: code });
+    setIsCountryDropdownOpen(false);
+    setCountrySearch('');
+  };
+
+  const handleSelectSpecialty = (specialty: string) => {
+    setFormData({ ...formData, specialty });
+    setIsSpecialtyDropdownOpen(false);
+    setSpecialtySearch('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Validation
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-      setError('All fields are required');
+    // Validation - only business logic checks, browser handles required fields
+    if (formData.role === 'patient') {
+      const birthDate = new Date(formData.birthdate);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const dayDiff = today.getDate() - birthDate.getDate();
+      
+      const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+      
+      if (actualAge < 18) {
+        setError('You must be at least 18 years old to register');
+        setIsLoading(false);
+        return;
+      }
+    }
+    if (formData.role === 'doctor' && !formData.specialty) {
+      setError('Please select a specialty');
+      setIsLoading(false);
+      return;
+    }
+    if (formData.role === 'doctor' && !formData.email.endsWith('@cdpa.com')) {
+      setError('Doctor email must end with @cdpa.com');
+      setIsLoading(false);
+      return;
+    }
+    if (!isPasswordStrong) {
+      setError('Password does not meet all requirements');
       setIsLoading(false);
       return;
     }
@@ -232,27 +326,30 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
       setIsLoading(false);
       return;
     }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      setIsLoading(false);
-      return;
-    }
 
     try {
-      const fullPhone = formData.phoneNumber ? `${formData.countryCode}${formData.phoneNumber}` : null;
+      const fullPhone = `${formData.countryCode}${formData.phoneNumber}`;
       const response = await axiosClient.post<AuthResponse>('/auth/register', {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
         phone: fullPhone,
-        gender: formData.gender || null,
-        birthdate: formData.birthdate || null,
+        gender: formData.gender,
+        birthdate: formData.birthdate,
         role: formData.role,
         specialty: formData.role === 'doctor' ? formData.specialty : null,
       });
 
       const { token, firstName, lastName, email, role, phone, gender, birthdate, specialty } = response.data;
+      
+      // If doctor, show approval waiting message instead of logging in
+      if (role.toLowerCase() === 'doctor') {
+        setShowDoctorApprovalMessage(true);
+        return;
+      }
+      
+      // For patients, proceed with normal login
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('role', role);
 
@@ -284,6 +381,30 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-medical-100 via-medical-50 to-medical-200 relative overflow-hidden">
 
+      {/* Doctor Approval Pending Message */}
+      {showDoctorApprovalMessage ? (
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-8 w-full max-w-md relative z-10 text-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Registration Successful!</h2>
+            <p className="text-gray-700 mb-2">Your doctor account has been created.</p>
+            <p className="text-gray-600 text-sm mb-6">
+              Please wait for admin approval before you can access the system. 
+              You will be able to log in once an administrator approves your account.
+            </p>
+          </div>
+          <button
+            onClick={onSwitchToLogin}
+            className="px-8 py-2.5 bg-gradient-to-r from-medical-500 to-medical-400 text-white rounded-full hover:shadow-lg hover:from-medical-600 hover:to-medical-500 transition-all text-sm font-medium"
+          >
+            Go to Login
+          </button>
+        </div>
+      ) : (
       <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl p-6 w-full max-w-2xl relative z-10">
         
         <div className="flex items-center justify-between mb-4">
@@ -308,7 +429,50 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
 
           {selectedRole === 'doctor' && (
             <div className="w-full">
-              <Input label="Specialty *" value={formData.specialty} onChange={e => setFormData({...formData, specialty: e.target.value})} required />
+              <label className="block text-gray-400 mb-1 text-xs">Specialty *</label>
+              <div className="relative">
+                <div
+                  onClick={() => setIsSpecialtyDropdownOpen(!isSpecialtyDropdownOpen)}
+                  className="w-full px-2 py-2 border-b-2 border-medical-300 bg-transparent text-sm cursor-pointer focus-within:border-medical-500 flex items-center justify-between"
+                >
+                  <span className={formData.specialty ? 'text-gray-900' : 'text-gray-400'}>
+                    {formData.specialty || 'Select specialty'}
+                  </span>
+                  <span className="text-gray-400">▼</span>
+                </div>
+                
+                {isSpecialtyDropdownOpen && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                    <div className="p-2 border-b border-gray-200">
+                      <input
+                        type="text"
+                        placeholder="Search specialty..."
+                        value={specialtySearch}
+                        onChange={e => setSpecialtySearch(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-medical-500"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredSpecialties.length > 0 ? (
+                        filteredSpecialties.map((specialty, index) => (
+                          <div
+                            key={index}
+                            onClick={() => handleSelectSpecialty(specialty)}
+                            className="px-3 py-2 hover:bg-medical-50 cursor-pointer text-sm"
+                          >
+                            {specialty}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          No specialties found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -318,11 +482,12 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
 
           <div className="grid grid-cols-2 gap-10">
             <div>
-              <label className="block text-gray-400 mb-1 text-xs">Gender</label>
+              <label className="block text-gray-400 mb-1 text-xs">Gender *</label>
               <select
                 value={formData.gender}
                 onChange={e => setFormData({ ...formData, gender: e.target.value })}
                 className="w-full px-2 py-2 border-b-2 border-medical-300 bg-transparent text-sm focus:outline-none focus:border-medical-500"
+                required
               >
                 <option value="">Select Gender</option>
                 <option value="male">Male</option>
@@ -330,10 +495,11 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
               </select>
             </div>
             <Input
-              label="Birthdate"
+              label="Birthdate *"
               type="date"
               value={formData.birthdate}
               onChange={e => setFormData({ ...formData, birthdate: e.target.value })}
+              required
             />
           </div>
 
@@ -341,28 +507,69 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
           <div className="w-full">
             <div>
               <label className="block text-gray-400 mb-1 text-xs">
-                Phone Number
+                Phone Number *
               </label>
               <div className="flex gap-10">
-                <select
-                  value={formData.countryCode}
-                  onChange={e => setFormData({ ...formData, countryCode: e.target.value })}
-                  className="w-72 px-0 py-0 border-b-2 border-medical-300 bg-transparent text-xs..."
-                >
-                  {COUNTRY_CODES.map(({ code, country }, index) => (
-                    <option key={`${code}-${index}`} value={code}>
-                      {code} {country}
-                    </option>
-                  ))}
-                </select>
+                <div className="w-72 relative">
+                  <div
+                    onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                    className="px-2 py-2 border-b-2 border-medical-300 bg-transparent text-sm cursor-pointer focus-within:border-medical-500 flex items-center justify-between"
+                  >
+                    <span>{selectedCountry?.code} {selectedCountry?.country}</span>
+                    <span className="text-gray-400">▼</span>
+                  </div>
+                  
+                  {isCountryDropdownOpen && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                      <div className="p-2 border-b border-gray-200">
+                        <input
+                          type="text"
+                          placeholder="Search country..."
+                          value={countrySearch}
+                          onChange={e => setCountrySearch(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-medical-500"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredCountries.length > 0 ? (
+                          filteredCountries.map(({ code, country }, index) => (
+                            <div
+                              key={`${code}-${index}`}
+                              onClick={() => handleSelectCountry(code)}
+                              className="px-3 py-2 hover:bg-medical-50 cursor-pointer text-sm"
+                            >
+                              {code} {country}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-gray-500">
+                            No countries found
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <input
                   type="tel"
                   placeholder="1234567890"
                   value={formData.phoneNumber}
-                  onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  onChange={e => {
+                    const value = e.target.value;
+                    // Only allow digits
+                    if (value === '' || /^\d+$/.test(value)) {
+                      setFormData({ ...formData, phoneNumber: value });
+                    }
+                  }}
                   className="flex-1 px-2 py-2 border-b-2 border-medical-300 bg-transparent text-sm
                             focus:outline-none focus:border-medical-500"
+                  pattern="\d{10}"
+                  title="Phone number must be exactly 10 digits"
+                  maxLength={10}
+                  minLength={10}
+                  required
                 />
               </div>
             </div>
@@ -376,21 +583,83 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
           
 
           <div className="grid grid-cols-2 gap-10">
-            <Input
-              label="Password *"
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-            />
-            <Input
-              label="Confirm Password *"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              required
-            />
+            <div>
+              <label className="block text-gray-400 mb-1 text-xs">Password *</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onFocus={() => setShowPasswordRequirements(true)}
+                  className="w-full px-2 py-2 pr-10 border-b-2 border-medical-300 bg-transparent text-sm focus:outline-none focus:border-medical-500"
+                  required
+                />
+                <button
+                  type="button"
+                  onMouseDown={() => setShowPassword(true)}
+                  onMouseUp={() => setShowPassword(false)}
+                  onMouseLeave={() => setShowPassword(false)}
+                  onTouchStart={() => setShowPassword(true)}
+                  onTouchEnd={() => setShowPassword(false)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-gray-400 mb-1 text-xs">Confirm Password *</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className="w-full px-2 py-2 pr-10 border-b-2 border-medical-300 bg-transparent text-sm focus:outline-none focus:border-medical-500"
+                  required
+                />
+                <button
+                  type="button"
+                  onMouseDown={() => setShowConfirmPassword(true)}
+                  onMouseUp={() => setShowConfirmPassword(false)}
+                  onMouseLeave={() => setShowConfirmPassword(false)}
+                  onTouchStart={() => setShowConfirmPassword(true)}
+                  onTouchEnd={() => setShowConfirmPassword(false)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
           </div>
+
+          {/* Password Requirements */}
+          {showPasswordRequirements && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs space-y-2">
+              <p className="font-semibold text-gray-700 mb-2">Password must contain:</p>
+              <div className="space-y-1">
+                <div className={`flex items-center gap-2 ${passwordRequirements.minLength ? 'text-green-600' : 'text-gray-500'}`}>
+                  <span>{passwordRequirements.minLength ? '✓' : '○'}</span>
+                  <span>At least 8 characters</span>
+                </div>
+                <div className={`flex items-center gap-2 ${passwordRequirements.hasUpperCase ? 'text-green-600' : 'text-gray-500'}`}>
+                  <span>{passwordRequirements.hasUpperCase ? '✓' : '○'}</span>
+                  <span>At least 1 uppercase letter (A-Z)</span>
+                </div>
+                <div className={`flex items-center gap-2 ${passwordRequirements.hasLowerCase ? 'text-green-600' : 'text-gray-500'}`}>
+                  <span>{passwordRequirements.hasLowerCase ? '✓' : '○'}</span>
+                  <span>At least 1 lowercase letter (a-z)</span>
+                </div>
+                <div className={`flex items-center gap-2 ${passwordRequirements.hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
+                  <span>{passwordRequirements.hasNumber ? '✓' : '○'}</span>
+                  <span>At least 1 number (0-9)</span>
+                </div>
+                <div className={`flex items-center gap-2 ${passwordRequirements.hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
+                  <span>{passwordRequirements.hasSpecialChar ? '✓' : '○'}</span>
+                  <span>At least 1 special character (!@#$%^&*...)</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">
@@ -415,6 +684,7 @@ export function Register({ onRegister, onSwitchToLogin, selectedRole, onBackToRo
           </button>
         </div>
       </div>
+      )}
 
     </div>
   );

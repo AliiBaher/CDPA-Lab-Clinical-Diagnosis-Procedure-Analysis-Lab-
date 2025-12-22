@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Trash2, AlertCircle } from 'lucide-react';
 import axiosClient from '../api/axiosClient';
+import type { User as UserType } from '../types';
 
 interface AppointmentDetail {
   id: string;
@@ -13,9 +14,14 @@ interface AppointmentDetail {
   endTime: string;
   status: string;
   createdAt: string;
+  notes?: string;
 }
 
-export function MyAppointments() {
+interface MyAppointmentsProps {
+  user?: UserType;
+}
+
+export function MyAppointments({ user }: MyAppointmentsProps) {
   const [appointments, setAppointments] = useState<AppointmentDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -126,10 +132,12 @@ export function MyAppointments() {
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900">{apt.doctorName}</h4>
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      {user?.role === 'doctor' ? apt.patientName : apt.doctorName}
+                    </h4>
                     <p className="text-sm text-gray-600 flex items-center mt-1">
                       <User className="w-4 h-4 mr-1" />
-                      {apt.doctorSpecialty || 'General Practice'}
+                      {user?.role === 'doctor' ? 'Patient' : (apt.doctorSpecialty || 'General Practice')}
                     </p>
                   </div>
                   <span className="inline-block px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-medium">
@@ -148,6 +156,12 @@ export function MyAppointments() {
                       {formatTime(apt.startTime)} - {formatTime(apt.endTime)}
                     </span>
                   </div>
+                  {apt.notes && (
+                    <div className="mt-3 pt-3 border-t border-green-200">
+                      <p className="text-xs font-semibold text-gray-700 mb-1">Notes:</p>
+                      <p className="text-sm text-gray-600 italic">{apt.notes}</p>
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -176,10 +190,12 @@ export function MyAppointments() {
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900">{apt.doctorName}</h4>
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      {user?.role === 'doctor' ? apt.patientName : apt.doctorName}
+                    </h4>
                     <p className="text-sm text-gray-600 flex items-center mt-1">
                       <User className="w-4 h-4 mr-1" />
-                      {apt.doctorSpecialty || 'General Practice'}
+                      {user?.role === 'doctor' ? 'Patient' : (apt.doctorSpecialty || 'General Practice')}
                     </p>
                   </div>
                   <span className="inline-block px-3 py-1 bg-gray-200 text-gray-800 rounded-full text-xs font-medium">
@@ -198,6 +214,12 @@ export function MyAppointments() {
                       {formatTime(apt.startTime)} - {formatTime(apt.endTime)}
                     </span>
                   </div>
+                  {apt.notes && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs font-semibold text-gray-700 mb-1">Notes:</p>
+                      <p className="text-sm text-gray-500 italic">{apt.notes}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

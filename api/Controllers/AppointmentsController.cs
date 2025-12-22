@@ -143,7 +143,8 @@ namespace Api.Controllers
                 StartTime = DateTime.SpecifyKind(slot.Date.Date.Add(slot.StartTime), DateTimeKind.Utc),
                 EndTime = DateTime.SpecifyKind(slot.Date.Date.Add(slot.EndTime), DateTimeKind.Utc),
                 Status = "scheduled",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                Notes = request.Notes
             };
 
             // Mark only this specific slot as booked
@@ -226,7 +227,8 @@ namespace Api.Controllers
                     StartTime = a.StartTime,
                     EndTime = a.EndTime,
                     Status = a.Status,
-                    CreatedAt = a.CreatedAt
+                    CreatedAt = a.CreatedAt,
+                    Notes = a.Notes
                 });
             }
 
@@ -273,6 +275,7 @@ namespace Api.Controllers
         public string? SlotStartTime { get; set; }
         public string? SlotEndTime { get; set; }
         public string? SlotDate { get; set; }
+        public string? Notes { get; set; }
     }
 
     public class AvailableDoctorResponse
@@ -319,5 +322,6 @@ namespace Api.Controllers
         public DateTime? EndTime { get; set; }
         public string Status { get; set; } = "";
         public DateTime CreatedAt { get; set; }
+        public string? Notes { get; set; }
     }
 }

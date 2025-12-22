@@ -92,6 +92,7 @@ public class AppDbContext : DbContext
             entity.Property(e => e.EndTime).HasColumnName("end_time");
             entity.Property(e => e.Status).HasColumnName("status");
             entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.Notes).HasColumnName("notes");
 
             entity.HasOne(e => e.Doctor)
                 .WithMany()

@@ -9,6 +9,7 @@ export interface AdminUser {
   role: string;
   createdAt: string;
   specialty?: string;
+  isApproved?: boolean;  // For doctors
 }
 
 export interface AdminStats {
@@ -62,6 +63,17 @@ const adminService = {
   // Toggle user active status
   toggleUserStatus: async (userId: string, isActive: boolean): Promise<void> => {
     await axiosClient.put(`/api/admin/users/${userId}/status`, { isActive });
+  },
+
+  // Approve or reject doctor registration
+  approveDoctor: async (doctorId: string, isApproved: boolean): Promise<void> => {
+    await axiosClient.put(`/api/admin/doctors/${doctorId}/approve`, { isApproved });
+  },
+
+  // Get all users (alias for getAllUsers)
+  getUsers: async (): Promise<AdminUser[]> => {
+    const response = await axiosClient.get('/api/admin/users');
+    return response.data;
   }
 };
 

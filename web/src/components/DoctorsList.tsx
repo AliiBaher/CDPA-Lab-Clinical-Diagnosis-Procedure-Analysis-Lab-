@@ -162,7 +162,7 @@ export function DoctorsList({ onSelectDoctor }: DoctorsListProps) {
             {/* Card Header */}
             <div className="bg-gradient-to-r from-medical-400 to-medical-600 px-6 py-8 text-white text-center">
               <Stethoscope className="w-12 h-12 mx-auto mb-2 opacity-80" />
-              <h3 className="text-lg font-semibold">Dr. {doctor.name}</h3>
+              <h3 className="text-lg font-semibold">{doctor.name}</h3>
             </div>
 
             {/* Card Body */}

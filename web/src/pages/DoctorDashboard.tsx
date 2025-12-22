@@ -57,7 +57,7 @@ export function DoctorDashboard({ user, onLogout, onProfileUpdate }: DoctorDashb
           {activeTab === 'availability' ? (
             <AvailabilityCalendar doctorId={user.id} />
           ) : activeTab === 'appointments' ? (
-            <MyAppointments />
+            <MyAppointments user={user} />
           ) : (
             <DoctorAiAssistPanel token={token} />
           )}

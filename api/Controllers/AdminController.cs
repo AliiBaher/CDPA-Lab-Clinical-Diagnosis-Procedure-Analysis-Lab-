@@ -35,7 +35,13 @@ namespace Api.Controllers
                     Specialty = _context.DoctorProfiles
                         .Where(dp => dp.UserId == u.Id)
                         .Select(dp => dp.Specialty)
-                        .FirstOrDefault()
+                        .FirstOrDefault(),
+                    IsApproved = u.Role.ToLower() == "doctor" 
+                        ? _context.DoctorProfiles
+                            .Where(dp => dp.UserId == u.Id)
+                            .Select(dp => (bool?)dp.IsActive)
+                            .FirstOrDefault()
+                        : null
                 })
                 .OrderByDescending(u => u.CreatedAt)
                 .ToListAsync();
@@ -186,6 +192,27 @@ namespace Api.Controllers
 
             return Ok(new { message = "Status updated successfully" });
         }
+
+        // PUT: api/admin/doctors/{id}/approve - Approve or reject doctor
+        [HttpPut("doctors/{id}/approve")]
+        public async Task<ActionResult> ApproveDoctorRegistration(Guid id, [FromBody] ApproveDoctorRequest request)
+        {
+            var user = await _context.AppUsers.FindAsync(id);
+            if (user == null)
+                return NotFound("User not found");
+
+            if (user.Role.ToLower() != "doctor")
+                return BadRequest("User is not a doctor");
+
+            var profile = await _context.DoctorProfiles.FirstOrDefaultAsync(dp => dp.UserId == user.Id);
+            if (profile == null)
+                return NotFound("Doctor profile not found");
+
+            profile.IsActive = request.IsApproved;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = request.IsApproved ? "Doctor approved successfully" : "Doctor rejected successfully" });
+        }
     }
 
     // DTOs
@@ -199,6 +226,7 @@ namespace Api.Controllers
         public string Role { get; set; } = "";
         public DateTime CreatedAt { get; set; }
         public string? Specialty { get; set; }
+        public bool? IsApproved { get; set; }  // For doctors
     }
 
     public class StatisticsDto
@@ -230,5 +258,10 @@ namespace Api.Controllers
     public class UpdateStatusRequest
     {
         public bool IsActive { get; set; }
+    }
+
+    public class ApproveDoctorRequest
+    {
+        public bool IsApproved { get; set; }
     }
 }

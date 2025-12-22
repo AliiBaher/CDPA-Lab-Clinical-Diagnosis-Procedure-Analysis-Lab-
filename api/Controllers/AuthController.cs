@@ -59,7 +59,7 @@ namespace Api.Controllers
                 {
                     UserId = user.Id,
                     Specialty = request.Specialty ?? "",
-                    IsActive = true
+                    IsActive = false  // Require admin approval
                 };
 
                 _context.DoctorProfiles.Add(doctorProfile);
@@ -105,6 +105,16 @@ namespace Api.Controllers
 
             if (!_passwordService.VerifyPassword(request.Password, user.PasswordHash))
                 return BadRequest(new { message = "Invalid email or password" });
+
+            // Check if doctor is approved (IsActive)
+            if (user.Role.ToLower() == "doctor")
+            {
+                var doctorProfile = await _context.DoctorProfiles
+                    .FirstOrDefaultAsync(dp => dp.UserId == user.Id);
+                
+                if (doctorProfile == null || !doctorProfile.IsActive)
+                    return Unauthorized(new { message = "Your account is pending admin approval. Please wait for approval before logging in." });
+            }
 
             var token = _jwtService.GenerateToken(user);
 

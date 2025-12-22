@@ -117,7 +117,7 @@ export function PatientDashboard({ user, onLogout, onProfileUpdate }: PatientDas
           )}
 
           {activeTab === 'appointments' && (
-            <MyAppointments key={refreshTrigger} />
+            <MyAppointments user={user} key={refreshTrigger} />
           )}
         </div>
       </div>
