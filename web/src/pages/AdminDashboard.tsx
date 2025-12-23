@@ -170,13 +170,7 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
       {/* Overview Tab */}
       {activeTab === 'overview' && (
         <div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard
-              icon={<Users className="h-8 w-8 text-blue-500" />}
-              title="Total Users"
-              value={stats?.totalUsers.toString() || '0'}
-              bgColor="bg-blue-50"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <StatCard
               icon={<Activity className="h-8 w-8 text-green-500" />}
               title="Total Doctors"
@@ -188,12 +182,6 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
               title="Total Patients"
               value={stats?.totalPatients.toString() || '0'}
               bgColor="bg-purple-50"
-            />
-            <StatCard
-              icon={<Calendar className="h-8 w-8 text-orange-500" />}
-              title="Total Appointments"
-              value={stats?.totalAppointments.toString() || '0'}
-              bgColor="bg-orange-50"
             />
           </div>
         </div>

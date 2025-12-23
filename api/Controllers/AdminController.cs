@@ -79,12 +79,11 @@ namespace Api.Controllers
         {
             var now = DateTime.UtcNow;
             
-            // Note: Auto-deletion disabled to prevent accidentally removing active appointments
-            // Admins can manually delete appointments if needed
-            
+            // Only show appointments that haven't started yet (hide when start time arrives)
             var appointments = await _context.Appointments
                 .Include(a => a.Patient)
                 .Include(a => a.Doctor)
+                .Where(a => a.StartTime > now) // Hide appointments where start time has passed
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
@@ -230,15 +229,25 @@ namespace Api.Controllers
             if (appointment.Status.ToLower() == "cancelled")
                 return BadRequest("Appointment is already cancelled");
 
-            appointment.Status = "cancelled";
-            
-            // Store the cancellation reason in notes
-            var currentNotes = appointment.Notes ?? "";
-            var cancellationNote = $"[ADMIN CANCELLED] Reason: {request.Reason}";
-            appointment.Notes = string.IsNullOrEmpty(currentNotes) 
-                ? cancellationNote 
-                : $"{currentNotes}\n{cancellationNote}";
+            // Find and unbook the availability slot
+            var slotDate = appointment.StartTime.Date;
+            var slotStartTime = TimeSpan.FromHours(appointment.StartTime.Hour).Add(TimeSpan.FromMinutes(appointment.StartTime.Minute));
+            var slotEndTime = appointment.EndTime.HasValue 
+                ? TimeSpan.FromHours(appointment.EndTime.Value.Hour).Add(TimeSpan.FromMinutes(appointment.EndTime.Value.Minute))
+                : slotStartTime.Add(TimeSpan.FromMinutes(15));
 
+            var slot = await _context.DoctorAvailabilitySlots
+                .FirstOrDefaultAsync(s => s.Date.Date == slotDate 
+                    && s.StartTime == slotStartTime 
+                    && s.EndTime == slotEndTime);
+            
+            if (slot != null)
+            {
+                slot.IsBooked = false;
+            }
+
+            // Remove the appointment from database (same as patient/doctor cancellation)
+            _context.Appointments.Remove(appointment);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Appointment cancelled successfully" });
