@@ -146,7 +146,9 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
     const status = getAppointmentStatus(apt.startTime, apt.endTime);
     return status === 'upcoming' || status === 'ongoing';
   });
-  const pastAppointments = appointments.filter(apt => getAppointmentStatus(apt.startTime, apt.endTime) === 'past');
+  const pastAppointments = appointments
+    .filter(apt => getAppointmentStatus(apt.startTime, apt.endTime) === 'past')
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
   if (isLoading) {
     return (
