@@ -32,6 +32,10 @@ namespace Api.Controllers
             if (appointment == null)
                 return NotFound(new { message = "Appointment not found" });
 
+            // Check if appointment is cancelled
+            if (appointment.Status?.ToLower() == "cancelled")
+                return BadRequest(new { message = "Cannot rate a cancelled appointment" });
+
             // Check if appointment has ended
             if (appointment.EndTime > DateTime.UtcNow)
                 return BadRequest(new { message = "Cannot rate an appointment that hasn't ended yet" });

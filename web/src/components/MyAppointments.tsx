@@ -296,7 +296,12 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
                 {/* Rating Section - Only for patients */}
                 {user?.role === 'patient' && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
-                    {apt.rating ? (
+                    {apt.status?.toLowerCase() === 'cancelled' ? (
+                      // Show message for cancelled appointments
+                      <div className="text-sm text-gray-500 italic">
+                        Rating not available for cancelled appointments
+                      </div>
+                    ) : apt.rating ? (
                       // Show existing rating
                       <div>
                         <p className="text-xs font-semibold text-gray-700 mb-2">Your Rating:</p>
