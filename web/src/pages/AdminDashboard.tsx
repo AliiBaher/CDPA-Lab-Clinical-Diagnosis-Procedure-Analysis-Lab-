@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { User } from '../types';
-import { Users, Activity, Calendar, Database, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Users, Activity, Calendar, Database, Trash2, CheckCircle, XCircle, Ban } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import adminService, { type AdminUser, type AdminStats, type AppointmentOverview } from '../api/adminService';
 
@@ -97,6 +97,20 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
       loadStatistics();
     } catch (err: any) {
       alert('Failed to delete user: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleCancelAppointment = async (appointmentId: string) => {
+    const reason = prompt('Enter reason for cancellation (emergency management):');
+    if (!reason) return;
+    
+    try {
+      await adminService.cancelAppointment(appointmentId, reason);
+      loadAppointments();
+      loadStatistics();
+      alert('Appointment cancelled successfully');
+    } catch (err: any) {
+      alert('Failed to cancel appointment: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -295,6 +309,7 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appointment Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -336,6 +351,21 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
                         const year = date.getFullYear();
                         return `${day}/${month}/${year}`;
                       })()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      {apt.status !== 'cancelled' && (
+                        <button
+                          onClick={() => handleCancelAppointment(apt.appointmentId)}
+                          className="text-red-600 hover:text-red-800 flex items-center gap-1"
+                          title="Cancel Appointment (Emergency)"
+                        >
+                          <Ban className="w-4 h-4" />
+                          Cancel
+                        </button>
+                      )}
+                      {apt.status === 'cancelled' && (
+                        <span className="text-gray-400 text-xs">Cancelled</span>
+                      )}
                     </td>
                   </tr>
                 ))}

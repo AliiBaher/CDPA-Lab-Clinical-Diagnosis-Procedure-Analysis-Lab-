@@ -77,6 +77,19 @@ namespace Api.Controllers
         [HttpGet("appointments")]
         public async Task<ActionResult<IEnumerable<AppointmentOverviewDto>>> GetAppointmentsOverview()
         {
+            var now = DateTime.UtcNow;
+            
+            // Delete past appointments
+            var pastAppointments = await _context.Appointments
+                .Where(a => a.StartTime <= now)
+                .ToListAsync();
+            
+            if (pastAppointments.Any())
+            {
+                _context.Appointments.RemoveRange(pastAppointments);
+                await _context.SaveChangesAsync();
+            }
+            
             var appointments = await _context.Appointments
                 .Include(a => a.Patient)
                 .Include(a => a.Doctor)
@@ -213,6 +226,31 @@ namespace Api.Controllers
 
             return Ok(new { message = request.IsApproved ? "Doctor approved successfully" : "Doctor rejected successfully" });
         }
+
+        // PUT: api/admin/appointments/{id}/cancel - Cancel appointment (emergency management)
+        [HttpPut("appointments/{id}/cancel")]
+        public async Task<ActionResult> CancelAppointment(Guid id, [FromBody] CancelAppointmentRequest request)
+        {
+            var appointment = await _context.Appointments.FindAsync(id);
+            if (appointment == null)
+                return NotFound("Appointment not found");
+
+            if (appointment.Status.ToLower() == "cancelled")
+                return BadRequest("Appointment is already cancelled");
+
+            appointment.Status = "cancelled";
+            
+            // Store the cancellation reason in notes
+            var currentNotes = appointment.Notes ?? "";
+            var cancellationNote = $"[ADMIN CANCELLED] Reason: {request.Reason}";
+            appointment.Notes = string.IsNullOrEmpty(currentNotes) 
+                ? cancellationNote 
+                : $"{currentNotes}\n{cancellationNote}";
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Appointment cancelled successfully" });
+        }
     }
 
     // DTOs
@@ -263,5 +301,10 @@ namespace Api.Controllers
     public class ApproveDoctorRequest
     {
         public bool IsApproved { get; set; }
+    }
+
+    public class CancelAppointmentRequest
+    {
+        public string Reason { get; set; } = "";
     }
 }

@@ -116,10 +116,10 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '';
-    // Parse the UTC timestamp and convert to local time
+    // Parse the UTC timestamp and display UTC time
     const date = new Date(timeStr);
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHour = hours % 12 || 12;
     const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;

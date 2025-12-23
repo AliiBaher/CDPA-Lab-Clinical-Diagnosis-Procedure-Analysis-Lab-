@@ -70,6 +70,11 @@ const adminService = {
     await axiosClient.put(`/api/admin/doctors/${doctorId}/approve`, { isApproved });
   },
 
+  // Cancel appointment (emergency management)
+  cancelAppointment: async (appointmentId: string, reason: string): Promise<void> => {
+    await axiosClient.put(`/api/admin/appointments/${appointmentId}/cancel`, { reason });
+  },
+
   // Get all users (alias for getAllUsers)
   getUsers: async (): Promise<AdminUser[]> => {
     const response = await axiosClient.get('/api/admin/users');

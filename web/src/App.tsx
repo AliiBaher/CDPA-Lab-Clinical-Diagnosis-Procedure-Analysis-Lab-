@@ -13,7 +13,6 @@ import { storageUtils } from './utils/sessionManager';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [isRegistering, setIsRegistering] = useState(false);
   const [selectedRole, setSelectedRole] = useState<'patient' | 'doctor' | null>(null);
 
   useEffect(() => {
@@ -38,7 +37,6 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
-    setIsRegistering(false);
     setSelectedRole(null);
     // Clear session storage for this tab only
     storageUtils.session.clear();
@@ -61,7 +59,7 @@ function App() {
             element={
               <RoleSelection
                 onSelectRole={(role) => setSelectedRole(role)}
-                onSwitchToLogin={() => setIsRegistering(false)}
+                onSwitchToLogin={() => {}}
               />
             }
           />
@@ -73,7 +71,6 @@ function App() {
                   selectedRole={selectedRole}
                   onRegister={handleRegister}
                   onSwitchToLogin={() => {
-                    setIsRegistering(false);
                     setSelectedRole(null);
                   }}
                   onBackToRoleSelection={() => setSelectedRole(null)}
@@ -88,7 +85,7 @@ function App() {
             element={
               <Login
                 onLogin={handleLogin}
-                onSwitchToRegister={() => setIsRegistering(true)}
+                onSwitchToRegister={() => {}}
               />
             }
           />

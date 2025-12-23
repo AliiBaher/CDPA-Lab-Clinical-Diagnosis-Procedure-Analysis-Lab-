@@ -15,6 +15,16 @@ export function ResetPassword() {
 
   const token = searchParams.get('token');
 
+  const passwordRequirements = {
+    minLength: newPassword.length >= 8,
+    hasUpperCase: /[A-Z]/.test(newPassword),
+    hasLowerCase: /[a-z]/.test(newPassword),
+    hasNumber: /[0-9]/.test(newPassword),
+    hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword),
+  };
+
+  const isPasswordStrong = Object.values(passwordRequirements).every(req => req);
+
   useEffect(() => {
     if (!token) {
       setError('Invalid reset link. Please request a new one.');
@@ -25,8 +35,8 @@ export function ResetPassword() {
     e.preventDefault();
     setError('');
 
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (!isPasswordStrong) {
+      setError('Password does not meet all requirements');
       return;
     }
 
@@ -104,7 +114,6 @@ export function ResetPassword() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
-                minLength={6}
                 placeholder="Enter new password"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:border-transparent pr-12"
               />
@@ -116,27 +125,58 @@ export function ResetPassword() {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters</p>
+            
+            {/* Password Requirements */}
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-1 text-sm">
+              <div className={`flex items-center gap-2 ${passwordRequirements.minLength ? 'text-green-600' : 'text-gray-500'}`}>
+                <span>{passwordRequirements.minLength ? '✓' : '○'}</span>
+                <span>At least 8 characters</span>
+              </div>
+              <div className={`flex items-center gap-2 ${passwordRequirements.hasUpperCase ? 'text-green-600' : 'text-gray-500'}`}>
+                <span>{passwordRequirements.hasUpperCase ? '✓' : '○'}</span>
+                <span>One uppercase letter</span>
+              </div>
+              <div className={`flex items-center gap-2 ${passwordRequirements.hasLowerCase ? 'text-green-600' : 'text-gray-500'}`}>
+                <span>{passwordRequirements.hasLowerCase ? '✓' : '○'}</span>
+                <span>One lowercase letter</span>
+              </div>
+              <div className={`flex items-center gap-2 ${passwordRequirements.hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
+                <span>{passwordRequirements.hasNumber ? '✓' : '○'}</span>
+                <span>One number</span>
+              </div>
+              <div className={`flex items-center gap-2 ${passwordRequirements.hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
+                <span>{passwordRequirements.hasSpecialChar ? '✓' : '○'}</span>
+                <span>One special character (!@#$%^&*...)</span>
+              </div>
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Confirm Password
             </label>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={6}
-              placeholder="Confirm new password"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:border-transparent"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                placeholder="Confirm new password"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:border-transparent pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
-            disabled={isLoading || !token}
+            disabled={isLoading || !token || !isPasswordStrong}
             className="w-full bg-medical-500 hover:bg-medical-600 text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Resetting...' : 'Reset Password'}
