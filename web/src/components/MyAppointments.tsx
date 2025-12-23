@@ -116,10 +116,10 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '';
-    // Parse the UTC timestamp and display UTC time
+    // Convert UTC to local time for display
     const date = new Date(timeStr);
-    const hours = date.getUTCHours();
-    const minutes = date.getUTCMinutes();
+    const hours = date.getHours(); // Local time
+    const minutes = date.getMinutes(); // Local time
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHour = hours % 12 || 12;
     const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
@@ -135,7 +135,7 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
     
     if (now < startTime) {
       return 'upcoming'; // Appointment hasn't started yet
-    } else if (now >= startTime && now <= endTime) {
+    } else if (now < endTime) {
       return 'ongoing'; // Currently in the appointment time
     } else {
       return 'past'; // Appointment has ended

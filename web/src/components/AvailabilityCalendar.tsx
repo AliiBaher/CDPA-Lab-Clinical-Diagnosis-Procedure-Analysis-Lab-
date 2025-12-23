@@ -279,8 +279,8 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
                     value={formData.slotDurationMinutes}
                     onChange={(e) => setFormData({ ...formData, slotDurationMinutes: parseInt(e.target.value) })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    min="15"
-                    step="15"
+                    min="5"
+                    step="5"
                   />
                 </div>
               </div>

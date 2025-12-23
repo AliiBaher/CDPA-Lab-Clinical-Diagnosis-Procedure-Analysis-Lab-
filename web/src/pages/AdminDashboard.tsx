@@ -324,11 +324,11 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {(() => {
                         const date = new Date(apt.appointmentDate);
-                        const day = String(date.getUTCDate()).padStart(2, '0');
-                        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-                        const year = date.getUTCFullYear();
-                        let hours = date.getUTCHours();
-                        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = date.getFullYear();
+                        let hours = date.getHours(); // Local time
+                        const minutes = String(date.getMinutes()).padStart(2, '0');
                         const ampm = hours >= 12 ? 'PM' : 'AM';
                         hours = hours % 12 || 12;
                         return `${day}/${month}/${year}, ${hours}:${minutes} ${ampm}`;

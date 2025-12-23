@@ -79,16 +79,8 @@ namespace Api.Controllers
         {
             var now = DateTime.UtcNow;
             
-            // Delete past appointments
-            var pastAppointments = await _context.Appointments
-                .Where(a => a.StartTime <= now)
-                .ToListAsync();
-            
-            if (pastAppointments.Any())
-            {
-                _context.Appointments.RemoveRange(pastAppointments);
-                await _context.SaveChangesAsync();
-            }
+            // Note: Auto-deletion disabled to prevent accidentally removing active appointments
+            // Admins can manually delete appointments if needed
             
             var appointments = await _context.Appointments
                 .Include(a => a.Patient)

@@ -12,7 +12,7 @@ namespace Api.Models
         
         public TimeSpan EndTime { get; set; }  // End hour (e.g., 17:00)
         
-        public int SlotDurationMinutes { get; set; } = 30;  // Duration of each appointment slot (default 30 minutes)
+        public int SlotDurationMinutes { get; set; } = 5;  // Duration of each appointment slot (default 5 minutes)
         
         public bool IsBooked { get; set; } = false;  // Mark if all slots are booked
         

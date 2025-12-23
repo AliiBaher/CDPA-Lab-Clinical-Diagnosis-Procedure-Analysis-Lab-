@@ -56,8 +56,17 @@ namespace Api.Controllers
                         .ThenBy(s => s.StartTime)
                         .ToListAsync();
 
+                    // Filter out past slots (convert local time slots to UTC for comparison)
+                    var now = DateTime.UtcNow;
+                    var futureSlots = availableSlots.Where(s => {
+                        // Slot times are in local time, convert to UTC for comparison
+                        var localSlotStart = DateTime.SpecifyKind(s.Date.Date.Add(s.StartTime), DateTimeKind.Local);
+                        var utcSlotStart = localSlotStart.ToUniversalTime();
+                        return utcSlotStart > now;
+                    }).ToList();
+
                     // Group slots by their parent availability to show each slot separately
-                    var slots = availableSlots.Select(s => new AvailableSlotResponse
+                    var slots = futureSlots.Select(s => new AvailableSlotResponse
                     {
                         AvailabilityId = s.AvailabilityId,
                         Date = s.Date.ToString("yyyy-MM-dd"),
@@ -125,23 +134,30 @@ namespace Api.Controllers
                 return NotFound(new { message = "Slot not found or already booked" });
 
             // Check if this patient already has an appointment at the same time with the same doctor
+            var localCheckTime = DateTime.SpecifyKind(slot.Date.Date.Add(slot.StartTime), DateTimeKind.Local);
+            var utcCheckTime = localCheckTime.ToUniversalTime();
+            
             var existingAppointment = await _context.Appointments
                 .FirstOrDefaultAsync(a => 
                     a.PatientId == patientId 
                     && a.DoctorId == slot.Availability!.DoctorId
-                    && a.StartTime == DateTime.SpecifyKind(slot.Date.Date.Add(slot.StartTime), DateTimeKind.Utc)
+                    && a.StartTime == utcCheckTime
                     && a.Status != "cancelled");
 
             if (existingAppointment != null)
                 return BadRequest(new { message = "You have already booked this appointment slot" });
 
+            // Convert local time to UTC for storage
+            var localStartTime = DateTime.SpecifyKind(slot.Date.Date.Add(slot.StartTime), DateTimeKind.Local);
+            var localEndTime = DateTime.SpecifyKind(slot.Date.Date.Add(slot.EndTime), DateTimeKind.Local);
+            
             var appointment = new Appointments
             {
                 Id = Guid.NewGuid(),
                 DoctorId = slot.Availability!.DoctorId,
                 PatientId = patientId,
-                StartTime = DateTime.SpecifyKind(slot.Date.Date.Add(slot.StartTime), DateTimeKind.Utc),
-                EndTime = DateTime.SpecifyKind(slot.Date.Date.Add(slot.EndTime), DateTimeKind.Utc),
+                StartTime = localStartTime.ToUniversalTime(),
+                EndTime = localEndTime.ToUniversalTime(),
                 Status = "scheduled",
                 CreatedAt = DateTime.UtcNow,
                 Notes = request.Notes
@@ -243,8 +259,8 @@ namespace Api.Controllers
                     DoctorName = a.Doctor != null ? $"Dr. {a.Doctor.FirstName} {a.Doctor.LastName}" : "Unknown",
                     DoctorSpecialty = doctorSpecialty,
                     PatientName = a.Patient != null ? $"{a.Patient.FirstName} {a.Patient.LastName}" : "Unknown",
-                    StartTime = a.StartTime,
-                    EndTime = a.EndTime,
+                    StartTime = DateTime.SpecifyKind(a.StartTime, DateTimeKind.Utc),
+                    EndTime = a.EndTime.HasValue ? DateTime.SpecifyKind(a.EndTime.Value, DateTimeKind.Utc) : null,
                     Status = a.Status,
                     CreatedAt = a.CreatedAt,
                     Notes = a.Notes,
