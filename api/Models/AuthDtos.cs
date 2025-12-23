@@ -50,4 +50,26 @@ namespace Api.Models
         public string? Phone { get; set; }
         public string? Specialty { get; set; }
     }
+
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; } = "";
+    }
+
+    public class ForgotPasswordResponse
+    {
+        public string Message { get; set; } = "";
+        public string? ResetLink { get; set; }  // Only in development mode
+    }
+
+    public class ResetPasswordRequest
+    {
+        public string Token { get; set; } = "";
+        public string NewPassword { get; set; } = "";
+    }
+
+    public class ResetPasswordResponse
+    {
+        public string Message { get; set; } = "";
+    }
 }

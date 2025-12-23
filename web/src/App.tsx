@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import type { User } from './types';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { RoleSelection } from './pages/RoleSelection';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { DoctorDashboard } from './pages/DoctorDashboard';
 import { PatientDashboard } from './pages/PatientDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -48,34 +51,50 @@ function App() {
   };
 
   if (!user) {
-    if (isRegistering && selectedRole) {
-      return (
-        <Register
-          selectedRole={selectedRole}
-          onRegister={handleRegister}
-          onSwitchToLogin={() => {
-            setIsRegistering(false);
-            setSelectedRole(null);
-          }}
-          onBackToRoleSelection={() => setSelectedRole(null)}
-        />
-      );
-    }
-
-    if (isRegistering && !selectedRole) {
-      return (
-        <RoleSelection
-          onSelectRole={(role) => setSelectedRole(role)}
-          onSwitchToLogin={() => setIsRegistering(false)}
-        />
-      );
-    }
-
     return (
-      <Login
-        onLogin={handleLogin}
-        onSwitchToRegister={() => setIsRegistering(true)}
-      />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route
+            path="/register/role"
+            element={
+              <RoleSelection
+                onSelectRole={(role) => setSelectedRole(role)}
+                onSwitchToLogin={() => setIsRegistering(false)}
+              />
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              selectedRole ? (
+                <Register
+                  selectedRole={selectedRole}
+                  onRegister={handleRegister}
+                  onSwitchToLogin={() => {
+                    setIsRegistering(false);
+                    setSelectedRole(null);
+                  }}
+                  onBackToRoleSelection={() => setSelectedRole(null)}
+                />
+              ) : (
+                <Navigate to="/register/role" />
+              )
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <Login
+                onLogin={handleLogin}
+                onSwitchToRegister={() => setIsRegistering(true)}
+              />
+            }
+          />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      </BrowserRouter>
     );
   }
 

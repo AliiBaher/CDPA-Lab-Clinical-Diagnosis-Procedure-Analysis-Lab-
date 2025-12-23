@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<DoctorAvailability> DoctorAvailabilities => Set<DoctorAvailability>();
     public DbSet<DoctorAvailabilitySlot> DoctorAvailabilitySlots => Set<DoctorAvailabilitySlot>();
     public DbSet<Appointments> Appointments => Set<Appointments>();
+    public DbSet<PasswordResetTokens> PasswordResetTokens => Set<PasswordResetTokens>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -151,6 +152,23 @@ public class AppDbContext : DbContext
 
             // Unique constraint: one rating per appointment
             entity.HasIndex(e => e.AppointmentId).IsUnique();
+        });
+
+        modelBuilder.Entity<PasswordResetTokens>(entity =>
+        {
+            entity.ToTable("password_reset_tokens");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Token).HasColumnName("token");
+            entity.Property(e => e.ExpiresAt).HasColumnName("expires_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         base.OnModelCreating(modelBuilder);

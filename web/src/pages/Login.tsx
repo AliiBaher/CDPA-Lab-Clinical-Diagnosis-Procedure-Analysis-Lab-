@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { User } from '../types';
 import { Input } from '../ui/Input';
 import axiosClient from '../api/axiosClient';
@@ -94,6 +95,15 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
           </div>
 
           {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
+
+          <div className="text-right">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-medical-600 hover:text-medical-700 font-medium hover:underline"
+            >
+              Forgot Password?
+            </Link>
+          </div>
 
           <div className="flex justify-center pt-4">
             <button type="submit" disabled={isLoading} className="px-16 py-3 bg-gradient-to-r from-medical-500 to-medical-400 text-white rounded-full hover:shadow-lg hover:from-medical-600 hover:to-medical-500 transition-all disabled:opacity-50">

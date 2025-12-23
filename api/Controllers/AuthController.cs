@@ -195,5 +195,82 @@ namespace Api.Controllers
                 Specialty = specialty
             });
         }
+
+        // =========================
+        // FORGOT PASSWORD
+        // =========================
+        [HttpPost("forgot-password")]
+        public async Task<ActionResult<ForgotPasswordResponse>> ForgotPassword(ForgotPasswordRequest request)
+        {
+            var user = await _context.AppUsers.FirstOrDefaultAsync(u => u.Email == request.Email);
+            
+            // Always return success to prevent email enumeration
+            if (user == null)
+                return Ok(new ForgotPasswordResponse { Message = "If the email exists, a reset link has been generated." });
+
+            // Generate reset token
+            var token = Guid.NewGuid().ToString();
+            var expiresAt = DateTime.UtcNow.AddHours(1);
+
+            // Delete any existing tokens for this user
+            var existingTokens = _context.PasswordResetTokens.Where(t => t.UserId == user.Id);
+            _context.PasswordResetTokens.RemoveRange(existingTokens);
+
+            // Create new token
+            var resetToken = new PasswordResetTokens
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                Token = token,
+                ExpiresAt = expiresAt,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.PasswordResetTokens.Add(resetToken);
+            await _context.SaveChangesAsync();
+
+            // Development mode: return the reset link directly
+            var resetLink = $"http://localhost:5173/reset-password?token={token}";
+
+            return Ok(new ForgotPasswordResponse 
+            { 
+                Message = "If the email exists, a reset link has been generated.",
+                ResetLink = resetLink  // Only in development
+            });
+        }
+
+        // =========================
+        // RESET PASSWORD
+        // =========================
+        [HttpPost("reset-password")]
+        public async Task<ActionResult<ResetPasswordResponse>> ResetPassword(ResetPasswordRequest request)
+        {
+            var resetToken = await _context.PasswordResetTokens
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.Token == request.Token);
+
+            if (resetToken == null)
+                return BadRequest(new { message = "Invalid or expired reset token" });
+
+            if (resetToken.ExpiresAt < DateTime.UtcNow)
+            {
+                _context.PasswordResetTokens.Remove(resetToken);
+                await _context.SaveChangesAsync();
+                return BadRequest(new { message = "Reset token has expired" });
+            }
+
+            // Update password
+            var user = resetToken.User;
+            if (user == null)
+                return NotFound(new { message = "User not found" });
+
+            user.PasswordHash = _passwordService.HashPassword(request.NewPassword);
+
+            // Remove the used token
+            _context.PasswordResetTokens.Remove(resetToken);
+            await _context.SaveChangesAsync();
+
+            return Ok(new ResetPasswordResponse { Message = "Password has been reset successfully" });
+        }
     }
 }
