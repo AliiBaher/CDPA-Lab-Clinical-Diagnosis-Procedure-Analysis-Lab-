@@ -14,10 +14,6 @@ public class AppDbContext : DbContext
     public DbSet<DoctorAvailability> DoctorAvailabilities => Set<DoctorAvailability>();
     public DbSet<DoctorAvailabilitySlot> DoctorAvailabilitySlots => Set<DoctorAvailabilitySlot>();
     public DbSet<Appointments> Appointments => Set<Appointments>();
-    public DbSet<AppCases> AppCases => Set<AppCases>();
-    public DbSet<AppCaseDiagnoses> AppCaseDiagnoses => Set<AppCaseDiagnoses>();
-    public DbSet<AppCaseProcedures> AppCaseProcedures => Set<AppCaseProcedures>();
-    public DbSet<AppCasePrescriptions> AppCasePrescriptions => Set<AppCasePrescriptions>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -88,7 +84,6 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.DoctorId).HasColumnName("doctor_id");
             entity.Property(e => e.PatientId).HasColumnName("patient_id");
-            entity.Property(e => e.CaseId).HasColumnName("case_id");
             entity.Property(e => e.StartTime).HasColumnName("start_time");
             entity.Property(e => e.EndTime).HasColumnName("end_time");
             entity.Property(e => e.Status).HasColumnName("status");
@@ -104,11 +99,6 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.PatientId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Case)
-                .WithMany()
-                .HasForeignKey(e => e.CaseId)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<DoctorAvailabilitySlot>(entity =>
@@ -127,77 +117,6 @@ public class AppDbContext : DbContext
             entity.HasOne(e => e.Availability)
                 .WithMany(a => a.Slots)
                 .HasForeignKey(e => e.AvailabilityId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<AppCases>(entity =>
-        {
-            entity.ToTable("app_cases");
-            entity.HasKey(e => e.CaseId);
-
-            entity.Property(e => e.CaseId).HasColumnName("case_id");
-            entity.Property(e => e.SubjectCode).HasColumnName("subject_code");
-            entity.Property(e => e.DoctorId).HasColumnName("doctor_id");
-            entity.Property(e => e.EpisodeStart).HasColumnName("episode_start");
-            entity.Property(e => e.EpisodeEnd).HasColumnName("episode_end");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-
-            entity.HasOne(e => e.Doctor)
-                .WithMany()
-                .HasForeignKey(e => e.DoctorId)
-                .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        modelBuilder.Entity<AppCaseDiagnoses>(entity =>
-        {
-            entity.ToTable("app_case_diagnoses");
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CaseId).HasColumnName("case_id");
-            entity.Property(e => e.Icd9Code).HasColumnName("icd9_code");
-            entity.Property(e => e.Diagnosis).HasColumnName("diagnosis");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-
-            entity.HasOne(e => e.Case)
-                .WithMany()
-                .HasForeignKey(e => e.CaseId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<AppCaseProcedures>(entity =>
-        {
-            entity.ToTable("app_case_procedures");
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CaseId).HasColumnName("case_id");
-            entity.Property(e => e.Icd9Code).HasColumnName("icd9_code");
-            entity.Property(e => e.ProcedureDescription).HasColumnName("procedure_description");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-
-            entity.HasOne(e => e.Case)
-                .WithMany()
-                .HasForeignKey(e => e.CaseId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<AppCasePrescriptions>(entity =>
-        {
-            entity.ToTable("app_case_prescriptions");
-            entity.HasKey(e => e.Id);
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CaseId).HasColumnName("case_id");
-            entity.Property(e => e.DrugName).HasColumnName("drug_name");
-            entity.Property(e => e.DoseValue).HasColumnName("dose_value");
-            entity.Property(e => e.DoseUnit).HasColumnName("dose_unit");
-            entity.Property(e => e.Route).HasColumnName("route");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-
-            entity.HasOne(e => e.Case)
-                .WithMany()
-                .HasForeignKey(e => e.CaseId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
