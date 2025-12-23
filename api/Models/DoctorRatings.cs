@@ -6,6 +6,7 @@ namespace Api.Models
 
         public Guid DoctorId { get; set; }  // uuid, FK to AppUser (doctor)
         public Guid PatientId { get; set; }  // uuid, FK to AppUser (patient)
+        public Guid AppointmentId { get; set; }  // uuid, FK to Appointment (one rating per appointment)
 
         public int Rating { get; set; }  // 1–5 stars
         public string? Comment { get; set; }  // text review
@@ -16,5 +17,6 @@ namespace Api.Models
         // Navigation properties
         public AppUser? Doctor { get; set; }
         public AppUser? Patient { get; set; }
+        public Appointments? Appointment { get; set; }
     }
 }

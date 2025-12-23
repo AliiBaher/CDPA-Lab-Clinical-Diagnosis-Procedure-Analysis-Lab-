@@ -192,8 +192,9 @@ namespace Api.Controllers
             }
             else if (userRole == "doctor")
             {
+                // For doctors, only show upcoming appointments (where EndTime hasn't passed yet)
                 query = _context.Appointments
-                    .Where(a => a.DoctorId == userId)
+                    .Where(a => a.DoctorId == userId && (a.EndTime == null || a.EndTime > DateTime.UtcNow))
                     .Include(a => a.Patient)
                     .Include(a => a.Doctor);
             }
@@ -203,7 +204,7 @@ namespace Api.Controllers
             }
 
             var appointments = await query
-                .OrderByDescending(a => a.StartTime)
+                .OrderBy(a => a.StartTime)
                 .ToListAsync();
 
             var result = new List<AppointmentDetailResponse>();
@@ -214,6 +215,24 @@ namespace Api.Controllers
                 {
                     var doctorProfile = await _context.DoctorProfiles.FirstOrDefaultAsync(p => p.UserId == a.DoctorId);
                     doctorSpecialty = doctorProfile?.Specialty;
+                }
+
+                // Check if rating exists for this appointment
+                RatingInfo? ratingInfo = null;
+                if (userRole == "patient")
+                {
+                    var rating = await _context.DoctorRatings
+                        .FirstOrDefaultAsync(r => r.AppointmentId == a.Id && r.PatientId == userId);
+                    
+                    if (rating != null)
+                    {
+                        ratingInfo = new RatingInfo
+                        {
+                            Id = rating.Id,
+                            Rating = rating.Rating,
+                            Comment = rating.Comment
+                        };
+                    }
                 }
 
                 result.Add(new AppointmentDetailResponse
@@ -228,7 +247,8 @@ namespace Api.Controllers
                     EndTime = a.EndTime,
                     Status = a.Status,
                     CreatedAt = a.CreatedAt,
-                    Notes = a.Notes
+                    Notes = a.Notes,
+                    Rating = ratingInfo
                 });
             }
 
@@ -323,5 +343,13 @@ namespace Api.Controllers
         public string Status { get; set; } = "";
         public DateTime CreatedAt { get; set; }
         public string? Notes { get; set; }
+        public RatingInfo? Rating { get; set; }
+    }
+
+    public class RatingInfo
+    {
+        public Guid Id { get; set; }
+        public int Rating { get; set; }
+        public string? Comment { get; set; }
     }
 }

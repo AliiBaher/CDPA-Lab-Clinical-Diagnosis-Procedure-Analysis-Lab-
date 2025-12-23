@@ -138,6 +138,7 @@ export function DoctorDetail({ doctor, onBack, onBookingSuccess }: DoctorDetailP
   };
 
   const formatTime = (timeStr: string) => {
+    // Display time as-is without timezone conversion
     const [hours, minutes] = timeStr.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';

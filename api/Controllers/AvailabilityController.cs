@@ -66,6 +66,20 @@ namespace Api.Controllers
 
             var requestDate = DateTime.SpecifyKind(request.Date.Date, DateTimeKind.Utc);
 
+            // Check if the slot time has already passed for today
+            var now = DateTime.UtcNow;
+            var today = DateTime.SpecifyKind(now.Date, DateTimeKind.Utc);
+            
+            if (requestDate == today)
+            {
+                // For today, check if the end time has passed
+                var slotEndDateTime = requestDate.Add(endTime);
+                if (slotEndDateTime <= now)
+                {
+                    return BadRequest(new { message = "Cannot create availability slots for times that have already passed" });
+                }
+            }
+
             // Get all existing slots for this doctor on this date to avoid duplicates
             var existingSlots = await _context.DoctorAvailabilitySlots
                 .Include(s => s.Availability)
@@ -248,7 +262,29 @@ namespace Api.Controllers
             var utcStartDate = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
             var utcEndDate = DateTime.SpecifyKind(endDate.Date.AddDays(1), DateTimeKind.Utc);
 
-            // Return individual slots, not availability blocks
+            // Delete only UNBOOKED slots that have already started (cleanup old slots)
+            var now = DateTime.UtcNow;
+            var pastSlots = await _context.DoctorAvailabilitySlots
+                .Include(s => s.Availability)
+                .Where(s => s.Availability.DoctorId == doctorId 
+                         && s.Date >= utcStartDate 
+                         && s.Date < utcEndDate
+                         && !s.IsBooked)  // Only get unbooked slots
+                .ToListAsync();
+
+            var slotsToDelete = pastSlots.Where(s => 
+            {
+                var slotStartDateTime = s.Date.Add(s.StartTime);
+                return slotStartDateTime <= now;
+            }).ToList();
+
+            if (slotsToDelete.Any())
+            {
+                _context.DoctorAvailabilitySlots.RemoveRange(slotsToDelete);
+                await _context.SaveChangesAsync();
+            }
+
+            // Return individual slots that are in the future and not booked
             var slots = await _context.DoctorAvailabilitySlots
                 .Include(s => s.Availability)
                 .Where(s => s.Availability.DoctorId == doctorId 

@@ -32,6 +32,17 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
   const [error, setError] = useState('');
   const requestInFlightRef = useRef(false);
 
+  // Helper to format time - just display as-is without timezone conversion
+  const formatTime = (timeStr: string) => {
+    // Handle both "HH:mm" and "HH:mm:ss" formats
+    const timePart = timeStr.split(':').slice(0, 2).join(':'); // Take only HH:mm
+    const [hours, minutes] = timePart.split(':').map(Number);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours % 12 || 12;
+    const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
+    return `${displayHour}:${displayMinutes} ${ampm}`;
+  };
+
   // Fetch availabilities for current month
   const fetchAvailabilities = async () => {
     try {
@@ -70,6 +81,24 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
     }
     
     setError('');
+    
+    // Check if the slot time has already passed for today
+    const slotDate = new Date(formData.date);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const selectedDate = new Date(slotDate.getFullYear(), slotDate.getMonth(), slotDate.getDate());
+    
+    if (selectedDate.getTime() === today.getTime()) {
+      // For today, check if the end time has passed
+      const [endHours, endMinutes] = formData.endTime.split(':').map(Number);
+      const slotEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHours, endMinutes);
+      
+      if (slotEndTime <= now) {
+        setError('Cannot create availability slots for times that have already passed.');
+        return;
+      }
+    }
+    
     setIsLoading(true);
     requestInFlightRef.current = true;
 
@@ -122,8 +151,26 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
   // Handle deleting availability (same as handleDeleteSlot for compatibility)
   const handleDeleteAvailability = (slotId: string, isBooked: boolean) => handleDeleteSlot(slotId, isBooked);
 
-  // No need to generate slots - API returns individual slots directly
-  const generatedSlots = availabilities;
+  // Filter out slots that have already started or passed
+  const isSlotPassed = (slot: Availability) => {
+    const slotDate = new Date(slot.date);
+    const now = new Date();
+    
+    // Parse the start time - hide slots that have already started
+    const [startHours, startMinutes] = slot.startTime.split(':').map(Number);
+    const slotStartDateTime = new Date(
+      slotDate.getFullYear(),
+      slotDate.getMonth(),
+      slotDate.getDate(),
+      startHours,
+      startMinutes
+    );
+    
+    return slotStartDateTime <= now;
+  };
+
+  // No need to generate slots - API returns individual slots directly, but filter out past and booked ones
+  const generatedSlots = availabilities.filter(slot => !isSlotPassed(slot) && !slot.isBooked);
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -320,7 +367,7 @@ export function AvailabilityCalendar({ onUpdate }: AvailabilityCalendarProps) {
                     {new Date(slot.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </p>
                   <p className="text-sm text-gray-700 font-medium mt-1">
-                    {slot.startTime} - {slot.endTime}
+                    {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
                   </p>
                   <p className="text-xs text-gray-500">
                     Duration: {slot.slotDurationMinutes} min

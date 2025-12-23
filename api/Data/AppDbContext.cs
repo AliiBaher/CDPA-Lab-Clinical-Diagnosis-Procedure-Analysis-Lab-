@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
 
     public DbSet<AppUser> AppUsers => Set<AppUser>();
     public DbSet<DoctorProfiles> DoctorProfiles => Set<DoctorProfiles>();
+    public DbSet<DoctorRatings> DoctorRatings => Set<DoctorRatings>();
     public DbSet<DoctorAvailability> DoctorAvailabilities => Set<DoctorAvailability>();
     public DbSet<DoctorAvailabilitySlot> DoctorAvailabilitySlots => Set<DoctorAvailabilitySlot>();
     public DbSet<Appointments> Appointments => Set<Appointments>();
@@ -198,6 +199,39 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.CaseId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DoctorRatings>(entity =>
+        {
+            entity.ToTable("doctor_ratings");
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.DoctorId).HasColumnName("doctor_id");
+            entity.Property(e => e.PatientId).HasColumnName("patient_id");
+            entity.Property(e => e.AppointmentId).HasColumnName("appointment_id");
+            entity.Property(e => e.Rating).HasColumnName("rating");
+            entity.Property(e => e.Comment).HasColumnName("comment");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.IsPublic).HasColumnName("is_public");
+
+            entity.HasOne(e => e.Doctor)
+                .WithMany()
+                .HasForeignKey(e => e.DoctorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Patient)
+                .WithMany()
+                .HasForeignKey(e => e.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Appointment)
+                .WithMany()
+                .HasForeignKey(e => e.AppointmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique constraint: one rating per appointment
+            entity.HasIndex(e => e.AppointmentId).IsUnique();
         });
 
         base.OnModelCreating(modelBuilder);

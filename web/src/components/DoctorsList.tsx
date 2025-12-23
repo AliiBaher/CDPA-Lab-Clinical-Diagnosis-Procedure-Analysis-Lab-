@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Stethoscope } from 'lucide-react';
+import { Stethoscope, Star } from 'lucide-react';
 import axiosClient from '../api/axiosClient';
 
 interface AvailableSlot {
@@ -19,6 +19,8 @@ interface AvailableDoctor {
   hospital?: string;
   bio?: string;
   availableSlots: AvailableSlot[];
+  averageRating?: number;
+  totalRatings?: number;
 }
 
 interface DoctorsListProps {
@@ -73,7 +75,25 @@ export function DoctorsList({ onSelectDoctor }: DoctorsListProps) {
     try {
       setIsLoading(true);
       const response = await axiosClient.get('/appointments/available-doctors');
-      setDoctors(response.data);
+      const doctorsData = response.data;
+      
+      // Fetch ratings for each doctor
+      const doctorsWithRatings = await Promise.all(
+        doctorsData.map(async (doctor: AvailableDoctor) => {
+          try {
+            const ratingResponse = await axiosClient.get(`/ratings/doctor/${doctor.doctorId}`);
+            return {
+              ...doctor,
+              averageRating: ratingResponse.data.averageRating,
+              totalRatings: ratingResponse.data.totalRatings
+            };
+          } catch {
+            return { ...doctor, averageRating: 0, totalRatings: 0 };
+          }
+        })
+      );
+      
+      setDoctors(doctorsWithRatings);
       setError('');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load doctors');
@@ -163,6 +183,31 @@ export function DoctorsList({ onSelectDoctor }: DoctorsListProps) {
             <div className="bg-gradient-to-r from-medical-400 to-medical-600 px-6 py-8 text-white text-center">
               <Stethoscope className="w-12 h-12 mx-auto mb-2 opacity-80" />
               <h3 className="text-lg font-semibold">{doctor.name}</h3>
+              {/* Rating Stars */}
+              {doctor.totalRatings && doctor.totalRatings > 0 ? (
+                <div className="flex items-center justify-center gap-1 mt-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Star
+                      key={star}
+                      className={`w-4 h-4 ${
+                        star <= Math.round(doctor.averageRating || 0)
+                          ? 'fill-white text-white'
+                          : 'text-white/30'
+                      }`}
+                    />
+                  ))}
+                  <span className="ml-1 text-xs text-white/90">
+                    ({doctor.averageRating?.toFixed(1)})
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-1 mt-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Star key={star} className="w-4 h-4 text-white/30" />
+                  ))}
+                  <span className="ml-1 text-xs text-white/60">No ratings yet</span>
+                </div>
+              )}
             </div>
 
             {/* Card Body */}

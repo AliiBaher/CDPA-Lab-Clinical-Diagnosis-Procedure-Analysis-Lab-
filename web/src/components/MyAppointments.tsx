@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Trash2, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, User, Trash2, AlertCircle, Star } from 'lucide-react';
 import axiosClient from '../api/axiosClient';
 import type { User as UserType } from '../types';
 
@@ -15,6 +15,11 @@ interface AppointmentDetail {
   status: string;
   createdAt: string;
   notes?: string;
+  rating?: {
+    id: string;
+    rating: number;
+    comment: string | null;
+  } | null;
 }
 
 interface MyAppointmentsProps {
@@ -26,6 +31,10 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [ratingAppointmentId, setRatingAppointmentId] = useState<string | null>(null);
+  const [ratingStars, setRatingStars] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
@@ -62,6 +71,39 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
     }
   };
 
+  const handleSubmitRating = async (appointmentId: string) => {
+    if (ratingStars === 0) {
+      alert('Please select a rating');
+      return;
+    }
+
+    setSubmittingRating(true);
+
+    try {
+      await axiosClient.post('/ratings', {
+        appointmentId,
+        rating: ratingStars,
+        comment: ratingComment || null
+      });
+
+      // Update the appointment with the rating
+      setAppointments(appointments.map(apt => 
+        apt.id === appointmentId 
+          ? { ...apt, rating: { id: '', rating: ratingStars, comment: ratingComment } }
+          : apt
+      ));
+
+      // Reset rating form
+      setRatingAppointmentId(null);
+      setRatingStars(0);
+      setRatingComment('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to submit rating');
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
@@ -74,21 +116,37 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '';
-    const parts = timeStr.includes('T') ? timeStr.split('T')[1] : timeStr;
-    const [hours, minutes] = parts.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    // Parse the UTC timestamp and convert to local time
+    const date = new Date(timeStr);
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = hours % 12 || 12;
+    const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
+    return `${displayHour}:${displayMinutes} ${ampm}`;
   };
 
-  const isUpcoming = (dateStr: string) => {
-    const appointmentDate = new Date(dateStr);
-    return appointmentDate > new Date();
+  const getAppointmentStatus = (startTimeStr: string, endTimeStr: string) => {
+    if (!endTimeStr) return 'past';
+    
+    const now = new Date();
+    const startTime = new Date(startTimeStr);
+    const endTime = new Date(endTimeStr);
+    
+    if (now < startTime) {
+      return 'upcoming'; // Appointment hasn't started yet
+    } else if (now >= startTime && now <= endTime) {
+      return 'ongoing'; // Currently in the appointment time
+    } else {
+      return 'past'; // Appointment has ended
+    }
   };
 
-  const upcomingAppointments = appointments.filter(apt => isUpcoming(apt.startTime));
-  const pastAppointments = appointments.filter(apt => !isUpcoming(apt.startTime));
+  const upcomingAppointments = appointments.filter(apt => {
+    const status = getAppointmentStatus(apt.startTime, apt.endTime);
+    return status === 'upcoming' || status === 'ongoing';
+  });
+  const pastAppointments = appointments.filter(apt => getAppointmentStatus(apt.startTime, apt.endTime) === 'past');
 
   if (isLoading) {
     return (
@@ -125,10 +183,18 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Appointments</h3>
           <div className="space-y-4">
-            {upcomingAppointments.map(apt => (
+            {upcomingAppointments.map(apt => {
+              const status = getAppointmentStatus(apt.startTime, apt.endTime);
+              const isOngoing = status === 'ongoing';
+              
+              return (
               <div
                 key={apt.id}
-                className="bg-green-50 border-2 border-green-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                className={`border-2 rounded-lg p-6 hover:shadow-md transition-shadow ${
+                  isOngoing 
+                    ? 'bg-blue-50 border-blue-300' 
+                    : 'bg-green-50 border-green-200'
+                }`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
@@ -140,8 +206,12 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
                       {user?.role === 'doctor' ? 'Patient' : (apt.doctorSpecialty || 'General Practice')}
                     </p>
                   </div>
-                  <span className="inline-block px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-medium">
-                    Upcoming
+                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                    isOngoing
+                      ? 'bg-blue-200 text-blue-900'
+                      : 'bg-green-200 text-green-800'
+                  }`}>
+                    {isOngoing ? 'In Progress' : 'Upcoming'}
                   </span>
                 </div>
 
@@ -157,7 +227,7 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
                     </span>
                   </div>
                   {apt.notes && (
-                    <div className="mt-3 pt-3 border-t border-green-200">
+                    <div className={`mt-3 pt-3 border-t ${isOngoing ? 'border-blue-200' : 'border-green-200'}`}>
                       <p className="text-xs font-semibold text-gray-700 mb-1">Notes:</p>
                       <p className="text-sm text-gray-600 italic">{apt.notes}</p>
                     </div>
@@ -173,7 +243,8 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
                   {cancellingId === apt.id ? 'Cancelling...' : 'Cancel Appointment'}
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -221,6 +292,93 @@ export function MyAppointments({ user }: MyAppointmentsProps) {
                     </div>
                   )}
                 </div>
+
+                {/* Rating Section - Only for patients */}
+                {user?.role === 'patient' && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    {apt.rating ? (
+                      // Show existing rating
+                      <div>
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Your Rating:</p>
+                        <div className="flex items-center gap-1 mb-2">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <Star
+                              key={star}
+                              className={`w-5 h-5 ${
+                                star <= apt.rating!.rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                          <span className="ml-2 text-sm text-gray-600">({apt.rating.rating}/5)</span>
+                        </div>
+                        {apt.rating.comment && (
+                          <p className="text-sm text-gray-600 italic">"{apt.rating.comment}"</p>
+                        )}
+                      </div>
+                    ) : ratingAppointmentId === apt.id ? (
+                      // Show rating form
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700 mb-2">Rate this appointment:</p>
+                        <div className="flex items-center gap-1 mb-3">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setRatingStars(star)}
+                              className="focus:outline-none"
+                            >
+                              <Star
+                                className={`w-6 h-6 cursor-pointer transition-colors ${
+                                  star <= ratingStars
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'text-gray-300 hover:text-yellow-200'
+                                }`}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={ratingComment}
+                          onChange={(e) => setRatingComment(e.target.value)}
+                          placeholder="Share your experience (optional)"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          rows={3}
+                        />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => handleSubmitRating(apt.id)}
+                            disabled={submittingRating || ratingStars === 0}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {submittingRating ? 'Submitting...' : 'Submit Rating'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setRatingAppointmentId(null);
+                              setRatingStars(0);
+                              setRatingComment('');
+                            }}
+                            disabled={submittingRating}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Show rate button
+                      <button
+                        onClick={() => setRatingAppointmentId(apt.id)}
+                        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                      >
+                        <Star className="w-4 h-4" />
+                        Rate this appointment
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

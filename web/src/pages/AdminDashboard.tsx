@@ -57,8 +57,19 @@ export function AdminDashboard({ user, onLogout, onProfileUpdate }: AdminDashboa
   };
   const handleApproveDoctor = async (userId: string, approve: boolean) => {
     try {
-      await adminService.approveDoctor(userId, approve);
-      await loadUsers();
+      if (approve) {
+        // Approve the doctor
+        await adminService.approveDoctor(userId, true);
+        await loadUsers();
+      } else {
+        // Reject = Delete the doctor account
+        if (!confirm('Are you sure you want to reject and delete this doctor account?')) {
+          return;
+        }
+        await adminService.deleteUser(userId);
+        setUsers(users.filter(u => u.id !== userId));
+        loadStatistics();
+      }
     } catch (err: any) {
       console.error('Failed to approve/reject doctor:', err);
       alert(err.response?.data?.message || 'Failed to update doctor approval status');
